@@ -6,6 +6,7 @@
 #include "al/graphics/al_Font.hpp"
 #include "al/ui/al_ControlGUI.hpp"
 
+#include "compressor.hpp"
 #include "marimba.hpp"
 
 /// The helper function used to visualize which keys pressed or released on a
@@ -20,6 +21,9 @@ public:
     al::SynthGUIManager<Marimba> synthManager{"Marimba"};
 
     RtMidiIn midiIn;
+
+    // Compressor.
+    CompressorPlugin<BLOCK_SIZE> compressor;
 
     // Mesh and variables for drawing piano keys
     al::Mesh meshKey;

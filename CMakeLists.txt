@@ -7,8 +7,9 @@ set(APP_NAME marimba)
 
 # path to main source file
 file(GLOB sources "src/*.cpp")
+file(GLOB simple_compressor_sources "src/SimpleCompressor/src/*.cpp")
 
-add_executable(${APP_NAME} ${sources})
+add_executable(${APP_NAME} ${sources} ${simple_compressor_sources})
 
 
 # add allolib as a subdirectory to the project
