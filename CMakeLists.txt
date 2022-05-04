@@ -3,10 +3,13 @@ cmake_minimum_required(VERSION 3.0)
 project(Allotemplate)
 
 # name of application. replace 'app' with desired app name
-set(APP_NAME app)
+set(APP_NAME marimba)
 
 # path to main source file
-add_executable(${APP_NAME} src/main.cpp src/marimba.cpp)
+file(GLOB sources "src/*.cpp")
+
+add_executable(${APP_NAME} ${sources})
+
 
 # add allolib as a subdirectory to the project
 add_subdirectory(allolib)

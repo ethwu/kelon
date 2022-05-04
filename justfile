@@ -21,7 +21,7 @@ configure:
 
 # Format sources.
 format dir=src:
-    clang-format -i "{{dir}}"/*.{h,c,hpp,cpp}
+    for i in $(fd -e h -e hpp -e c -e cpp '' "{{dir}}") ; do clang-format -i "$i" ; done
 alias fmt := format
 
 # Clean build artifacts.

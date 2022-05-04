@@ -12,12 +12,14 @@
 /// virtual piano.
 int asciiToKeyLabelIndex(int asciiKey);
 
-class MyApp : public al::App {
+class MyApp : public al::App, al::MIDIMessageHandler {
 public:
     // GUI manager for SineEnv voices
     // The name provided determines the name of the directory
     // where the presets and sequences are stored
     al::SynthGUIManager<Marimba> synthManager{"Marimba"};
+
+    RtMidiIn midiIn;
 
     // Mesh and variables for drawing piano keys
     al::Mesh meshKey;
@@ -39,6 +41,8 @@ public:
     // happen once at startup.
     void onCreate() override;
 
+    void onInit() override;
+
     // The audio callback function. Called when audio hardware requires data
     void onSound(al::AudioIOData &io) override;
 
@@ -47,11 +51,17 @@ public:
     // The graphics callback function.
     void onDraw(al::Graphics &g) override;
 
+    // Trigger a note.
+    void triggerNote(const unsigned int note, const float amplitude);
+
     // Whenever a key is pressed, this function is called
     bool onKeyDown(al::Keyboard const &k) override;
 
     // Whenever a key is released this function is called
     bool onKeyUp(al::Keyboard const &k) override;
+
+    // Callback for MIDI messages.
+    void onMIDIMessage(const al::MIDIMessage &m) override;
 
     // Whenever the window size changes this function is called
     void onResize(int w, int h) override;

@@ -88,7 +88,9 @@ void MyApp::onCreate() {
 
     // Set sampling rate for Gamma objects from app's audio
     gam::sampleRate(audioIO().framesPerSecond());
+}
 
+void MyApp::onInit() {
     al::imguiInit();
 
     // Cacluate the size of piano keys based on the app window size
@@ -103,6 +105,18 @@ void MyApp::onCreate() {
 
     // Set the font renderer
     fontRender.load(al::Font::defaultFont().c_str(), 60, 1024);
+
+    if (midiIn.getPortCount() > 0) {
+        // Bind MIDI handler if there is a MIDI device connected.
+        MIDIMessageHandler::bindTo(midiIn);
+
+        // Open the last MIDI device.
+        unsigned int port = midiIn.getPortCount() - 1;
+        midiIn.openPort(port);
+        std::cout << "Opened port to " << midiIn.getPortName(port) << std::endl;
+    } else {
+        std::cout << "Did not find a MIDI device to connect to." << std::endl;
+    }
 
     // Play example sequence. Comment this line to start from scratch
     synthManager.synthSequencer().playSequence("synth1.synthSequence");
@@ -191,6 +205,14 @@ void MyApp::onDraw(al::Graphics &g) {
     al::imguiDraw();
 }
 
+void MyApp::triggerNote(const unsigned int note, const float amplitude) {
+    synthManager.voice()->setInternalParameterValue(
+        "frequency", ::pow(2.f, (note - 69.f) / 12.f) * 432.f);
+    synthManager.voice()->setInternalParameterValue("amplitude", amplitude);
+
+    synthManager.triggerOn(note);
+}
+
 bool MyApp::onKeyDown(al::Keyboard const &k) {
     if (al::ParameterGUI::usingKeyboard()) { // Ignore keys if GUI is using
                                              // keyboard
@@ -205,6 +227,9 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
         int midiNote = al::asciiToMIDI(k.key());
 
         if (midiNote > 0) {
+            triggerNote(
+                midiNote,
+                synthManager.voice()->getInternalParameterValue("amplitude"));
             // Check which key is pressed
             int keyIndex = asciiToKeyLabelIndex(k.key());
 
@@ -213,10 +238,6 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
                 keyIndex -= 20;
                 isBlackKey = true;
             }
-
-            synthManager.voice()->setInternalParameterValue(
-                "frequency", ::pow(2.f, (midiNote - 69.f) / 12.f) * 432.f);
-
             float w = keyWidth;
             float h = keyHeight;
             float x =
@@ -238,8 +259,6 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
                                                             h);
             synthManager.voice()->setInternalParameterValue("pianoKeyX", x);
             synthManager.voice()->setInternalParameterValue("pianoKeyY", y);
-
-            synthManager.triggerOn(midiNote);
         }
     }
     return true;
@@ -251,6 +270,34 @@ bool MyApp::onKeyUp(al::Keyboard const &k) {
         synthManager.triggerOff(midiNote);
     }
     return true;
+}
+
+void MyApp::onMIDIMessage(const al::MIDIMessage &m) {
+    switch (m.type()) {
+    case al::MIDIByte::NOTE_ON: {
+        int midiNote = m.noteNumber();
+        if (midiNote > 0 && m.velocity() > 0.001) {
+            triggerNote(midiNote, m.velocity());
+        }
+        // if (midiNote > 0 && m.velocity() > 0.001) {
+        //     synthManager.voice()->setInternalParameterValue(
+        //         "freq", ::pow(2.f, (midiNote - 69.f) / 12.f) * 432.f);
+        //     synthManager.voice()->setInternalParameterValue(
+        //         "attackTime", 0.01 / m.velocity());
+        //     synthManager.triggerOn(midiNote);
+        // } else {
+        //     synthManager.triggerOff(midiNote);
+        // }
+        break;
+    }
+    case al::MIDIByte::NOTE_OFF: {
+        int midiNote = m.noteNumber();
+        printf("Note OFF %u, Vel %f", m.noteNumber(), m.velocity());
+        synthManager.triggerOff(midiNote);
+        break;
+    }
+    default:;
+    }
 }
 
 void MyApp::onResize(int w, int h) {

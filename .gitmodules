@@ -1,6 +1,12 @@
 [submodule "allolib"]
-	path = allolib
+    path = allolib
 	url = git@github.com:Allosphere-Research-Group/allolib.git
+	shallow = true
 [submodule "al_ext"]
 	path = al_ext
 	url = git@github.com:Allosphere-Research-Group/al_ext.git
+	shallow = true
+[submodule "src/SimpleCompressor"]
+	path = src/SimpleCompressor
+	url = git@github.com:DanielRudrich/SimpleCompressor.git
+	shallow = true
