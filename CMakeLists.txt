@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 
 project(Allotemplate)
 
-# name of application. replace 'app' with desired app name
-set(APP_NAME marimba)
+# name of application.
+file (STRINGS "app_name.txt" APP_NAME)
 
 # path to main source file
 file(GLOB sources "src/*.cpp")

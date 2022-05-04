@@ -35,4 +35,4 @@ reset-deps:
 
 # Clean build artifacts.
 clean:
-    rm -rf build
+    rm -rf bin build
