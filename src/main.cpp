@@ -125,7 +125,7 @@ void MyApp::onInit() {
 
 void MyApp::onSound(al::AudioIOData &io) {
     synthManager.render(io); // Render audio
-    compressor(io);
+    if (useCompressor) compressor(io);
 }
 
 void MyApp::onAnimate(double dt) {
@@ -219,6 +219,13 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
                                              // keyboard
         return true;
     }
+    
+    if (k.key() == '=') {
+        useCompressor = !useCompressor;
+        std::cout << "use compressor: " << useCompressor << std::endl;
+        return true;
+    }   
+
     if (k.shift()) {
         // If shift pressed then keyboard sets preset
         int presetNumber = al::asciiToIndex(k.key());

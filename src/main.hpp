@@ -24,6 +24,7 @@ public:
 
     // Compressor.
     CompressorPlugin<BLOCK_SIZE> compressor;
+    bool useCompressor = true;
 
     // Mesh and variables for drawing piano keys
     al::Mesh meshKey;
