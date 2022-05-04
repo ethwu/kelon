@@ -1,0 +1,6 @@
+[submodule "allolib"]
+	path = allolib
+	url = git@github.com:Allosphere-Research-Group/allolib.git
+[submodule "al_ext"]
+	path = al_ext
+	url = git@github.com:Allosphere-Research-Group/al_ext.git
