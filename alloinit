@@ -1,0 +1,314 @@
+#! /bin/bash
+
+if [ "${BASH_VERSINFO:-0}" -lt 3 ] ; then
+    >&2 echo "$0 requires Bash 3 or greater."
+    exit 1
+fi
+
+# Dependencies needed to run `alloinit`.
+alloinit_deps=( basename find fold git ln mkdir rm rmdir touch tput )
+for dep in "${alloinit_deps[@]}" ; do
+    if ! [[ "$(command -v "$dep")" ]] ; then
+        >&2 echo "$0 requires $dep."
+        exit 1
+    fi
+done
+
+# Propagate non-zero error codes in pipelines.
+set -o pipefail
+
+# Data directory.
+data_home="${XDG_DATA_HOME:-$HOME/.local/share}/alloinit"
+
+# Color support if outputting to a terminal with color.
+if [[ -t 1 ]] && [[ -n "$(tput colors)" ]] && [[ -z ${NO_COLOR+blank} ]] ; then
+    bold="$(tput bold)"
+    underline="$(tput smul)"
+    normal="$(tput sgr0)"
+    red="$(tput setaf 1)"
+    green="$(tput setaf 2)"
+    yellow="$(tput setaf 3)"
+    blue="$(tput setaf 4)"
+fi
+
+# Name of the script.
+name="$(basename $0)"
+# Version.
+version='0.1.2'
+# Usage information.
+
+function show_usage() {
+    local width="$(tput cols)"
+    # Color shortcuts.
+    local n="$normal"
+    local b="$blue"
+    local u="$underline"
+    local g="$green"
+    local y="$yellow"
+    fold -s -w $((width > 80 ? 80 : width)) <<EOF
+$g$0$n $version
+One-step Allolib project initializer.
+
+${y}Usage$n:
+    $g$name -N <dir>$n           Start a traditional Allotemplate project
+                                in <dir> using Git submodules (i.e., without
+                                shared Allolib between projects).
+    $g$name -l <dir> -u$n        Update dependencies for traditional
+                                project in <dir>.
+
+    $g$name [OPTIONS] <dir>$n    Start a new Allolib project in <dir>.
+    $g$name [OPTIONS] -r <dir>$n Relink Allolib dependencies in <dir>.
+    $g$name [OPTIONS] -u$n       Update Allolib dependencies.
+    $g$name [OPTIONS] -L$n       Just install Allolib dependencies.
+
+${y}Options$n:
+    $g-l <libs>$n   Specify the directory to install Allolib dependencies
+                to. [Default: $g$data_home$n]
+    $g-r$n          Relink dependencies. Useful if you have moved Allolib.
+    $g-u$n          Update dependencies.
+    $g-L$n          Install dependencies without initializing a project.
+    $g-N$n          Install without linking dependencies, adding them as Git
+                submodules instead. When Allolib dependencies are installed
+                this way, the $g-u$n flag can be used to update Allolib by
+                passing the root of the project to $g-l$n.
+    $g-h$n          Show this help text.
+    $g-V$n          Show the version.
+
+${y}Full Documentation$n:
+    $b${u}https://allolib-s22.github.io/notes-ethwu/alloinit.html$n
+EOF
+}
+
+if [[ $# -lt 1 ]] ; then
+    show_usage
+    exit 0
+fi
+
+# Positional arguments.
+args=()
+# Subcommand to execute.
+subcommand=init
+while [[ $OPTIND -le $# ]] ; do
+    if getopts 'l:ruLNhV' opt ; then
+        case "$opt" in
+        l)
+            lib="$OPTARG"
+            ;;
+        r)
+            subcommand=relink
+            ;;
+        u)
+            subcommand=update
+            ;;
+        L)
+            subcommand=installdeps
+            ;;
+        N)
+            nolink=1
+            ;;
+        h)
+            show_usage
+            exit 0
+            ;;
+        V)
+            echo "$version"
+            exit 0
+            ;;
+        ?)
+            exit 1
+            ;;
+        esac
+    else
+        # Store positional argument.
+        args+=("${!OPTIND}")
+        ((OPTIND++))
+    fi
+done
+
+# Log a success message to stderr, in bold green if the output is a terminal
+# that supports color.
+function success() { >&2 echo "$bold$green$*$normal" ; }
+# Log an info message to stderr, in blue if the output is a terminal that
+# supports color.
+function info() { >&2 echo "$blue$*$normal" ; }
+# Log a warning message to stderr, in yellow if the output is a terminal that
+# supports color.
+function warn() { >&2 echo "$yellow$*$normal" ; }
+# Log an error message to stderr, in bold red if the output is a terminal that
+# supports color.
+function error() { >&2 echo "$bold$red$*$normal" ; }
+
+# Directory to set up allolib project in.
+dest="${args[0]}"
+if [[ $subcommand =~ (init|relink) ]] && [[ -z "$dest" ]] ; then
+    error "ERROR: Project directory required."
+    >&2 show_usage
+    exit 1
+fi
+# Directory to keep shared dependencies.
+lib="${lib:-$data_home}"
+# Whether the dependency directory already existed before running the script.
+lib_existed="$(test -d "$lib" ; echo $?)"
+# Dependencies shared between allolib projects.
+deps=(
+    allolib
+    al_ext
+)
+
+# Temporary file to indicate that directory was created by alloinit.
+tmpfile=.alloinit.tmp
+
+# Clean up in case of early abort.
+function cleanup() {
+    if [[ $subcommand == init ]] ; then
+        warn 'Could not finish; cleaning up.'
+        for dep in "${deps[@]}" ; do
+            if [[ -f "$lib/.$dep$tmpfile" ]] ; then
+                info "Removing dependency \`$lib/$dep\`."
+                rm -rf "$lib/$dep" "$lib/.$dep$tmpfile"
+            fi
+        done
+
+        # Remove lib if it did not exist prior to running alloinit.
+        if [[ -d "$lib" ]] && ! [[ "$lib_existed" -eq 0 ]] &&
+            [[ -n "$(find "$lib" -maxdepth 0 -type d -empty 2> /dev/null)" ]] ; then
+            rmdir "$lib"
+        fi
+
+        if [[ -f "$dest/$tmpfile" ]] ; then
+            info "Removing project \`$dest\`."
+            rm -rf "$dest"
+        fi
+    fi
+}
+
+function onexit() {
+    [[ $? -gt 0 ]] && cleanup
+
+    [[ $subcommand == init ]] && rm -f "$dest/$tmpfile"
+}
+
+trap onexit EXIT
+
+
+# Install allolib dependencies to $lib.
+function install_dependencies() {
+    mkdir -p "$lib" || exit $?
+    for dep in "${deps[@]}" ; do
+        if [[ ! -d "$lib/$dep" ]] ; then
+            touch "$lib/.$dep$tmpfile" || exit $?
+            info "Retrieving dependency \`$dep\`:"
+            git clone "git@github.com:Allosphere-Research-Group/$dep.git" "$lib/$dep" \
+                --recurse-submodules \
+                --depth 1 \
+                --progress 2>&1 || exit $?
+            rm -f "$lib/.$dep$tmpfile" || exit $?
+        fi
+    done
+}
+
+# Link dependencies to a project. If the first argument is set, also amends the
+# `.gitignore` to ignore the dependency links.
+function link_dependencies() {
+    if [[ -n $nolink ]] ; then
+        warn "Not linking dependencies."
+    else
+        local write_gitignore=$1
+        [[ -z $write_gitignore ]] || printf "\n\n# allolib dependencies\n" >> "$dest/.gitignore"
+        for dep in "${deps[@]}" ; do
+            if ! [[ -d "$lib/$dep" ]] ; then
+                error "\`$lib/$deps\` is not a directory."
+                exit 1
+            fi
+            loc="$(cd "$lib/$dep" && pwd)" || exit $?
+            [[ -z $write_gitignore ]] || printf "/$dep\n" >> "$dest/.gitignore"
+            info "Linking dependency \`$dep\` to \`$loc\`."
+            ln -sf "$loc" "$dest" || exit $?
+        done
+    fi
+}
+
+# Add dependencies as submodules to a project. Only used when the -N (nolink)
+# flag is passed.
+function add_dependencies_as_submodules() (
+    cd "$1"
+    info "Adding dependencies as submodules in \`$1\`."
+    for dep in "${deps[@]}" ; do
+        git submodule add "git@github.com:Allosphere-Research-Group/$dep.git" \
+            2>&1 || exit $?
+    done
+    git submodule update --init --recursive --depth 1 2>&1 || exit $?
+)
+
+
+# Execute subcommand:
+case $subcommand in
+relink)
+    info "Relinking dependencies in project \`$dest\`."
+    # Install and link dependencies again, but do not write to `.gitignore`.
+    install_dependencies || exit $?
+    link_dependencies || exit $?
+    success "Successfully relinked dependencies in \`$dest\`!"
+    ;;
+update)
+    # Update existing libraries.
+    for dep in "${deps[@]}" ; do
+        if ! [[ -d "$lib/$dep" ]] ; then
+            error "ERROR: \`$dep\` not installed in \`$lib\`."
+            exit 1
+        fi
+        info "Updating dependency \`$dep\`:"
+        (
+            cd "$lib/$dep"
+            # Sync upstream changes to the URL of submodules.
+            git submodule sync --recursive || exit $?
+            # Update submodules.
+            git submodule update --recursive --progress || exit $?
+            # Pull changes.
+            git pull --progress || exit $?
+        ) 2>&1 || exit $?
+    done
+    success "Successfully updated Allolib dependencies in \`$lib\`!"
+    ;;
+installdeps)
+    install_dependencies || exit $?
+    success "Successfully installed Allolib dependencies to \`$lib\`!"
+    ;;
+init)
+    if [[ -d "$dest" ]] ; then
+        error "Directory \`$dest\` already exists."
+        exit 1
+    fi
+
+    info "Initializing allolib project in \`$dest\`:"
+    mkdir -p "$dest" || exit $?
+    # Mark that $dest is currently being initialized. Used for checking whether
+    # to delete it in case of an early exit.
+    touch "$dest/$tmpfile" || exit $?
+    (
+        cd "$dest"
+        # Initialize an empty repository.
+        git init
+        # Pull changes from `allotemplate` as its own remote.
+        git remote add allotemplate git@github.com:Allosphere-Research-Group/allotemplate.git \
+            || exit $?
+        git pull allotemplate master || exit $?
+    ) 2>&1 || exit $?
+
+    # Install dependencies, link them, and write their names to the `.gitignore`.
+    if [[ -n $nolink ]] ; then
+        add_dependencies_as_submodules "$dest" || exit $?
+    else
+        install_dependencies || exit $?
+        link_dependencies write_gitignore || exit $?
+    fi
+
+    info 'Configuring allolib project.'
+    (cd "$dest" && ./configure.sh ) 2>&1 || exit $?
+
+    info 'Removing unusable scripts (init.sh; distclean.sh).'
+    rm "$dest/"{init,distclean}.sh || exit $?
+
+    success "Successfully initialized Allolib project \`$dest\`!"
+    ;;
+esac
