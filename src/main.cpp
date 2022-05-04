@@ -207,11 +207,34 @@ void MyApp::onDraw(al::Graphics &g) {
 }
 
 void MyApp::triggerNote(const unsigned int note, const float amplitude) {
-    synthManager.voice()->setInternalParameterValue(
-        "frequency", ::pow(2.f, (note - 69.f) / 12.f) * 432.f);
-    synthManager.voice()->setInternalParameterValue("amplitude", amplitude);
+    float hardness = synthManager.voice()->getInternalParameterValue("hardness");
 
-    synthManager.triggerOn(note);
+    double freq = ::pow(2.f, (note - 69.f) / 12.f) * 432.f;
+
+    float attackTime = ::pow(hardness, 2.0f) / (4096.0f);
+    float releaseTime = (96.0f - note) / 80.0f + 0.3f;
+    float decayTime = attackTime;
+    float decayLevel = 1.02f - hardness / 6.0f;
+
+    auto *voice = synthManager.voice();
+    voice->setInternalParameterValue("frequency", freq);
+    voice->setInternalParameterValue("amplitude", amplitude);
+    voice->setInternalParameterValue("attackTime", attackTime);
+    voice->setInternalParameterValue("decayTime", decayTime);
+    voice->setInternalParameterValue("decayLevel", decayLevel);
+    voice->setInternalParameterValue("releaseTime", releaseTime);
+
+    voice = synthManager.synth().getVoice<Marimba>();
+    voice->setInternalParameterValue("frequency", freq);
+    voice->setInternalParameterValue("amplitude", amplitude);
+    voice->setInternalParameterValue("attackTime", attackTime);
+    voice->setInternalParameterValue("decayTime", decayTime);
+    voice->setInternalParameterValue("decayLevel", decayLevel);
+    voice->setInternalParameterValue("releaseTime", releaseTime);
+
+    std::cout << note << " (" << freq << "Hz)\t@ " << amplitude << "\tA " << attackTime << "s\tD " << decayTime << "s\t R " << releaseTime << "s\t" << hardness << std::endl;
+
+    synthManager.synthSequencer().addVoiceFromNow(voice, 0.01, 0.1);
 }
 
 bool MyApp::onKeyDown(al::Keyboard const &k) {
@@ -235,9 +258,6 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
         int midiNote = al::asciiToMIDI(k.key());
 
         if (midiNote > 0) {
-            triggerNote(
-                midiNote,
-                synthManager.voice()->getInternalParameterValue("amplitude"));
             // Check which key is pressed
             int keyIndex = asciiToKeyLabelIndex(k.key());
 
@@ -267,6 +287,10 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
                                                             h);
             synthManager.voice()->setInternalParameterValue("pianoKeyX", x);
             synthManager.voice()->setInternalParameterValue("pianoKeyY", y);
+
+            triggerNote(
+                midiNote,
+                synthManager.voice()->getInternalParameterValue("amplitude"));
         }
     }
     return true;
@@ -300,7 +324,7 @@ void MyApp::onMIDIMessage(const al::MIDIMessage &m) {
     }
     case al::MIDIByte::NOTE_OFF: {
         int midiNote = m.noteNumber();
-        printf("Note OFF %u, Vel %f\n", m.noteNumber(), m.velocity());
+        // printf("Note OFF %u, Vel %f\n", m.noteNumber(), m.velocity());
         synthManager.triggerOff(midiNote);
         break;
     }

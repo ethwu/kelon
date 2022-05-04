@@ -6,8 +6,8 @@
 
 void Marimba::init() {
     // Intialize envelope
-    mAmpEnv.curve(0); // make segments lines
-    mAmpEnv.levels(0, 1, 1, 0);
+    mAmpEnv.curve(0.3); // make segments lines
+    mAmpEnv.levels(0, 1, 0.3, 0);
     mAmpEnv.sustainPoint(2); // Make point 2 sustain until a release is issued
 
     addRect(mMesh, 0, 0, 1, 1);
@@ -17,10 +17,13 @@ void Marimba::init() {
     // change them while you are prototyping, but their changes will only be
     // stored and aplied when a note is triggered.)
 
+    createInternalTriggerParameter("hardness", 2, 1, 5);
     createInternalTriggerParameter("amplitude", 0.3, 0.0, 1.0);
-    createInternalTriggerParameter("frequency", 60, 20, 5000);
-    createInternalTriggerParameter("attackTime", 1.0, 0.01, 3.0);
-    createInternalTriggerParameter("releaseTime", 3.0, 0.1, 10.0);
+    createInternalTriggerParameter("frequency", 440, 20, 5000);
+    createInternalTriggerParameter("attackTime", 0.01, 0.001, 3.0);
+    createInternalTriggerParameter("decayTime", 0.1, 0.001, 3.0);
+    createInternalTriggerParameter("decayLevel", 0.6, 0.00, 1.0);
+    createInternalTriggerParameter("releaseTime", 0.2, 0.001, 10.0);
     createInternalTriggerParameter("pan", 0.0, -1.0, 1.0);
 
     createInternalTriggerParameter("pianoKeyX");
@@ -38,6 +41,8 @@ void Marimba::onProcess(al::AudioIOData &io) {
     // are outside the sample processing loop.
     mOsc.freq(getInternalParameterValue("frequency"));
     mAmpEnv.lengths()[0] = getInternalParameterValue("attackTime");
+    mAmpEnv.lengths()[1] = getInternalParameterValue("decayTime");
+    mAmpEnv.levels()[1] = getInternalParameterValue("decayLevel");
     mAmpEnv.lengths()[2] = getInternalParameterValue("releaseTime");
     mPan.pos(getInternalParameterValue("pan"));
     while (io()) {

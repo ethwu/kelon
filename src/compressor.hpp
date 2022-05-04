@@ -32,7 +32,7 @@ bool operator==(const CompressorStats &l, const CompressorStats &r);
 template <int block_size> class CompressorPlugin {
 public:
     bool useLookAhead = false;
-    bool debug = true;
+    bool debug = false;
 
     CompressorStats previousStats = CompressorStats(0.0f, 1.0f, 0.0f);
 
