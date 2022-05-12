@@ -26,6 +26,9 @@ public:
     CompressorPlugin<BLOCK_SIZE> compressor;
     bool useCompressor = false;
 
+    // Octave offset.
+    int offset = 0;
+
     // Mesh and variables for drawing piano keys
     al::Mesh meshKey;
     float keyWidth, keyHeight;
@@ -57,7 +60,7 @@ public:
     void onDraw(al::Graphics &g) override;
 
     // Trigger a note.
-    void triggerNote(const unsigned int note, const float amplitude);
+    void triggerNote(const unsigned int note);
 
     // Whenever a key is pressed, this function is called
     bool onKeyDown(al::Keyboard const &k) override;

@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+#include "util.hpp"
+
 int asciiToKeyLabelIndex(int asciiKey) {
     switch (asciiKey) {
     case '2':
@@ -93,29 +95,34 @@ void MyApp::onCreate() {
 void MyApp::onInit() {
     al::imguiInit();
 
-    // Cacluate the size of piano keys based on the app window size
-    float w = float(width());
-    float h = float(height());
-    keyWidth = w / 10.f - keyPadding * 2.f;
-    keyHeight = h / 2.f - keyPadding * 2.f;
-    fontSize = keyWidth * 0.2;
+    keyWidth =
+        float(width()) / float(Marimba::RANGE.second - Marimba::RANGE.first);
 
-    // Create a mesh that will be drawn as piano keys
-    addRect(meshKey, 0, 0, keyWidth, keyHeight);
+    addRect(meshKey, 0, 0, keyWidth, height());
 
-    // Set the font renderer
-    fontRender.load(al::Font::defaultFont().c_str(), 60, 1024);
+    // // Cacluate the size of piano keys based on the app window size
+    // float w = float(width());
+    // float h = float(height());
+    // keyWidth = w / 10.f - keyPadding * 2.f;
+    // keyHeight = h / 2.f - keyPadding * 2.f;
+    // fontSize = keyWidth * 0.2;
+
+    // // Create a mesh that will be drawn as piano keys
+    // addRect(meshKey, 0, 0, keyWidth, keyHeight);
+
+    // // Set the font renderer
+    // fontRender.load(al::Font::defaultFont().c_str(), 60, 1024);
 
     if (midiIn.getPortCount() > 0) {
         // Bind MIDI handler if there is a MIDI device connected.
         MIDIMessageHandler::bindTo(midiIn);
 
         // Open the last MIDI device.
-        unsigned int port = midiIn.getPortCount() - 1;
+        const unsigned int port = midiIn.getPortCount() - 1;
         midiIn.openPort(port);
-        std::cout << "Opened port to " << midiIn.getPortName(port) << std::endl;
+        std::cerr << "Opened port to " << midiIn.getPortName(port) << std::endl;
     } else {
-        std::cout << "Did not find a MIDI device to connect to." << std::endl;
+        std::cerr << "Did not find a MIDI device to connect to." << std::endl;
     }
 
     // Play example sequence. Comment this line to start from scratch
@@ -125,7 +132,9 @@ void MyApp::onInit() {
 
 void MyApp::onSound(al::AudioIOData &io) {
     synthManager.render(io); // Render audio
-    if (useCompressor) compressor(io);
+    if (useCompressor) {
+        compressor(io);
+    }
 }
 
 void MyApp::onAnimate(double dt) {
@@ -140,64 +149,65 @@ void MyApp::onDraw(al::Graphics &g) {
     g.clear();
 
     // This example uses only the orthogonal projection for 2D drawing
-    g.camera(al::Viewpoint::ORTHO_FOR_2D); // Ortho [0:width] x [0:height]
+    g.camera(al::Viewpoint::ORTHO_FOR_2D); // Ortho [0:width] * [0:height]
 
-    // Drawing white piano keys
-    for (int i = 0; i < 20; i++) {
-        int index = i % 10;
-        g.pushMatrix();
+    // // Drawing white piano keys
+    // for (int i = 0; i < 20; i++) {
+    //     int index = i % 10;
+    //     g.pushMatrix();
 
-        float c = 0.9;
-        float x = (keyWidth + keyPadding * 2) * index + keyPadding;
-        float y = 0;
+    //     float c = 0.9;
+    //     float x = (keyWidth + keyPadding * 2) * index + keyPadding;
+    //     float y = 0;
 
-        if (i >= 10) {
-            y = keyHeight + keyPadding * 2;
-        }
+    //     if (i >= 10) {
+    //         y = keyHeight + keyPadding * 2;
+    //     }
 
-        g.translate(x, y);
-        g.color(c);
-        g.tint(c);
-        g.draw(meshKey);
+    //     g.translate(x, y);
+    //     g.color(c);
+    //     g.tint(c);
+    //     g.draw(meshKey);
 
-        g.tint(1);
-        fontRender.write(whitekeyLabels[i].c_str(), fontSize);
-        fontRender.renderAt(g, {keyWidth * 0.5 - 5, keyHeight * 0.1, 0.0});
+    //     g.tint(1);
+    //     fontRender.write(whitekeyLabels[i].c_str(), fontSize);
+    //     fontRender.renderAt(g, {keyWidth * 0.5 - 5, keyHeight * 0.1, 0.0});
 
-        g.popMatrix();
-    }
+    //     g.popMatrix();
+    // }
 
-    // Drawing balck piano keys
-    for (int i = 0; i < 20; i++) {
-        int index = i % 10;
-        if (index == 2 || index == 6 || index == 9)
-            continue;
+    // // Drawing balck piano keys
+    // for (int i = 0; i < 20; i++) {
+    //     int index = i % 10;
+    //     if (index == 2 || index == 6 || index == 9)
+    //         continue;
 
-        g.pushMatrix();
+    //     g.pushMatrix();
 
-        float c = 0.5;
-        float x =
-            (keyWidth + keyPadding * 2) * index + keyPadding + keyWidth * 0.5;
-        float y = keyHeight * 0.5;
+    //     float c = 0.5;
+    //     float x =
+    //         (keyWidth + keyPadding * 2) * index + keyPadding + keyWidth *
+    //         0.5;
+    //     float y = keyHeight * 0.5;
 
-        if (i >= 10) {
-            y = y + keyHeight + keyPadding * 2;
-        }
+    //     if (i >= 10) {
+    //         y = y + keyHeight + keyPadding * 2;
+    //     }
 
-        g.translate(x, y);
-        g.scale(1, 0.5);
-        g.color(c);
-        g.tint(c);
-        g.draw(meshKey);
+    //     g.translate(x, y);
+    //     g.scale(1, 0.5);
+    //     g.color(c);
+    //     g.tint(c);
+    //     g.draw(meshKey);
 
-        g.scale(1, 2);
+    //     g.scale(1, 2);
 
-        g.tint(1);
-        fontRender.write(blackkeyLabels[i].c_str(), fontSize);
-        fontRender.renderAt(g, {keyWidth * 0.5 - 5, keyHeight * 0.1, 0.0});
+    //     g.tint(1);
+    //     fontRender.write(blackkeyLabels[i].c_str(), fontSize);
+    //     fontRender.renderAt(g, {keyWidth * 0.5 - 5, keyHeight * 0.1, 0.0});
 
-        g.popMatrix();
-    }
+    //     g.popMatrix();
+    // }
 
     // Render the synth's graphics
     synthManager.render(g);
@@ -206,34 +216,13 @@ void MyApp::onDraw(al::Graphics &g) {
     al::imguiDraw();
 }
 
-void MyApp::triggerNote(const unsigned int note, const float amplitude) {
-    float hardness = synthManager.voice()->getInternalParameterValue("hardness");
-
-    double freq = ::pow(2.f, (note - 69.f) / 12.f) * 432.f;
-
-    float attackTime = ::pow(hardness, 2.0f) / (4096.0f);
-    float releaseTime = (96.0f - note) / 80.0f + 0.3f;
-    float decayTime = attackTime;
-    float decayLevel = 1.02f - hardness / 6.0f;
-
-    auto *voice = synthManager.voice();
-    voice->setInternalParameterValue("frequency", freq);
-    voice->setInternalParameterValue("amplitude", amplitude);
-    voice->setInternalParameterValue("attackTime", attackTime);
-    voice->setInternalParameterValue("decayTime", decayTime);
-    voice->setInternalParameterValue("decayLevel", decayLevel);
-    voice->setInternalParameterValue("releaseTime", releaseTime);
-
-    voice = synthManager.synth().getVoice<Marimba>();
-    voice->setInternalParameterValue("frequency", freq);
-    voice->setInternalParameterValue("amplitude", amplitude);
-    voice->setInternalParameterValue("attackTime", attackTime);
-    voice->setInternalParameterValue("decayTime", decayTime);
-    voice->setInternalParameterValue("decayLevel", decayLevel);
-    voice->setInternalParameterValue("releaseTime", releaseTime);
-
-    std::cout << note << " (" << freq << "Hz)\t@ " << amplitude << "\tA " << attackTime << "s\tD " << decayTime << "s\t R " << releaseTime << "s\t" << hardness << std::endl;
-
+void MyApp::triggerNote(const unsigned int note) {
+    auto *guiVoice = synthManager.voice();
+    guiVoice->setValue(Marimba::Parameter::VisualWidth, width());
+    guiVoice->setValue(Marimba::Parameter::VisualHeight, height());
+    guiVoice->setValue(Marimba::Parameter::Frequency, midiNoteToFreq(note));
+    auto *voice = synthManager.synth().getVoice<Marimba>();
+    voice->sync(*synthManager.voice());
     synthManager.synthSequencer().addVoiceFromNow(voice, 0.01, 0.1);
 }
 
@@ -242,56 +231,25 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
                                              // keyboard
         return true;
     }
-    
-    if (k.key() == '=') {
+
+    switch (k.key()) {
+    case '=':
         useCompressor = !useCompressor;
-        std::cout << "use compressor: " << useCompressor << std::endl;
-        return true;
-    }   
-
-    if (k.shift()) {
-        // If shift pressed then keyboard sets preset
-        int presetNumber = al::asciiToIndex(k.key());
-        synthManager.recallPreset(presetNumber);
-    } else {
-        // Otherwise trigger note for polyphonic synth
-        int midiNote = al::asciiToMIDI(k.key());
-
-        if (midiNote > 0) {
-            // Check which key is pressed
-            int keyIndex = asciiToKeyLabelIndex(k.key());
-
-            bool isBlackKey = false;
-            if (keyIndex >= 20) {
-                keyIndex -= 20;
-                isBlackKey = true;
-            }
-            float w = keyWidth;
-            float h = keyHeight;
-            float x =
-                (keyWidth + keyPadding * 2) * (keyIndex % 10) + keyPadding;
-            float y = 0;
-
-            if (isBlackKey == true) {
-                x += keyWidth * 0.5;
-                y += keyHeight * 0.5;
-                h *= 0.5;
-            }
-
-            if (keyIndex >= 10) {
-                y += keyHeight + keyPadding * 2;
-            }
-
-            synthManager.voice()->setInternalParameterValue("pianoKeyWidth", w);
-            synthManager.voice()->setInternalParameterValue("pianoKeyHeight",
-                                                            h);
-            synthManager.voice()->setInternalParameterValue("pianoKeyX", x);
-            synthManager.voice()->setInternalParameterValue("pianoKeyY", y);
-
-            triggerNote(
-                midiNote,
-                synthManager.voice()->getInternalParameterValue("amplitude"));
-        }
+        std::cerr << "use compressor: " << useCompressor << std::endl;
+        break;
+    case al::Keyboard::Key::RIGHT:
+        // Increase octave by one on right arrow.
+        offset++;
+        break;
+    case al::Keyboard::Key::LEFT:
+        // Reduce octave by one on left arrow.
+        offset--;
+        break;
+    default:
+        // Use the built-in allolib ASCII to MIDI converter, along with the
+        // offset above.
+        triggerNote(al::asciiToMIDI(k.key()) + 12 * offset);
+        break;
     }
     return true;
 }
@@ -309,17 +267,10 @@ void MyApp::onMIDIMessage(const al::MIDIMessage &m) {
     case al::MIDIByte::NOTE_ON: {
         int midiNote = m.noteNumber();
         if (midiNote > 0 && m.velocity() > 0.001) {
-            triggerNote(midiNote, m.velocity());
+            synthManager.voice()->setValue(Marimba::Parameter::Amplitude,
+                                           m.velocity());
+            triggerNote(midiNote);
         }
-        // if (midiNote > 0 && m.velocity() > 0.001) {
-        //     synthManager.voice()->setInternalParameterValue(
-        //         "freq", ::pow(2.f, (midiNote - 69.f) / 12.f) * 432.f);
-        //     synthManager.voice()->setInternalParameterValue(
-        //         "attackTime", 0.01 / m.velocity());
-        //     synthManager.triggerOn(midiNote);
-        // } else {
-        //     synthManager.triggerOff(midiNote);
-        // }
         break;
     }
     case al::MIDIByte::NOTE_OFF: {
