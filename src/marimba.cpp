@@ -16,9 +16,13 @@ void Marimba::init() {
     // Set the curvature of the ADSR envelope.
     env.curve(0.3);
     // Set ADSR envelope levels.
-    env.levels(0, 1, 0.3, 0);
+    env.levels(0, 1, 0.1, 0);
     // Sustain point 2 until release.
     env.sustainPoint(2);
+
+    env2.curve(1);
+    env2.levels(0, 1, 0.3, 0);
+    env2.sustainPoint(2);
 
     // Set up the main parameters of the voice.
     for (const auto &values : INTERNAL_TRIGGER_PARAMETER_DEFAULTS) {
@@ -41,7 +45,8 @@ void Marimba::onProcess(al::AudioIOData &io) {
     const float freq = value(Parameter::Frequency);
     const unsigned char note = freqToMidiNote(freq);
 
-    osc.freq(freq);
+    sineOsc.freq(freq);
+    sineOsc2.freq(freq * 2.0f);
 
     const float attackTime = std::pow(hardness, 2.0f) / 4096.0f;
     const float releaseTime = (96.0f - float(note)) / 80.0f + 0.3f;
@@ -53,11 +58,17 @@ void Marimba::onProcess(al::AudioIOData &io) {
     // adsrLengths[2] = value(Parameter::SustainTime);
     adsrLengths[3] = releaseTime;
 
+    env2.lengths()[0] = attackTime;
+    env2.lengths()[1] = decayTime / 2.0f;
+    env2.lengths()[3] = releaseTime / 3.0f;
+
     pan.pos(value(Parameter::Pan));
 
     while (io()) {
+        float sine1 = sineOsc() * env();
+        float sine2 = sineOsc2() * env2();
         // Generate a sample in mono.
-        float sampleLeft = osc() * env() * value(Parameter::Amplitude);
+        float sampleLeft = sine1 * sine2 * value(Parameter::Amplitude);
 
         // Visuals follow generated sample.
         envFollower(sampleLeft);
@@ -91,13 +102,14 @@ void Marimba::onProcess(al::Graphics &g) {
 
     /// Width of the visual.
     const float w = windowWidth / range;
+    const float hardness = value(Parameter::Hardness);
     /// Height of the visual.
-    const float h = value(Parameter::VisualHeight);
+    const float h = value(Parameter::VisualHeight) * amplitude;
 
     const float x = w * (note - 0.5);
 
     const float hue = note / range;
-    const float sat = 1.f - amplitude;
+    const float sat = hardness / 12.f;
     const float val = 0.9;
 
     g.pushMatrix();
@@ -136,7 +148,7 @@ void Marimba::sync(Marimba &other) {
 const std::pair<char, char> Marimba::RANGE = {C2, C7};
 
 const float Marimba::MINIMUM_ADSR_TIME = 0.001;
-const float Marimba::MAXIMUM_ADSR_TIME = 0.001;
+const float Marimba::MAXIMUM_ADSR_TIME = 3.0;
 const float Marimba::PARAMETER_DEFAULT_DEFAULT_VALUE = 0.0;
 const float Marimba::PARAMETER_DEFAULT_MINIMUM_VALUE = -9999.0;
 const float Marimba::PARAMETER_DEFAULT_MAXIMUM_VALUE = 9999.0;

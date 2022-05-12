@@ -24,9 +24,13 @@ public:
     /// 2-channel panner.
     gam::Pan<> pan;
     /// Sine wave oscillator.
-    gam::Sine<> osc;
+    gam::Sine<> sineOsc;
+    gam::Sine<> sineOsc2;
+    /// Low frequency oscillator.
+    gam::LFO<> lfOsc;
     /// ADSR envelope.
     gam::Env<3> env;
+    gam::Env<3> env2;
 
     /// Envelope follower for graphics.
     gam::EnvFollow<> envFollower;

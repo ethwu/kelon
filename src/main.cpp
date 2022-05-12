@@ -232,6 +232,7 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
         return true;
     }
 
+    auto *voice = synthManager.voice();
     switch (k.key()) {
     case '=':
         useCompressor = !useCompressor;
@@ -244,6 +245,14 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
     case al::Keyboard::Key::LEFT:
         // Reduce octave by one on left arrow.
         offset--;
+        break;
+    case al::Keyboard::Key::UP:
+        voice->setValue(Marimba::Parameter::Hardness,
+                        voice->value(Marimba::Parameter::Hardness) + 1);
+        break;
+    case al::Keyboard::Key::DOWN:
+        voice->setValue(Marimba::Parameter::Hardness,
+                        voice->value(Marimba::Parameter::Hardness) - 1);
         break;
     default:
         // Use the built-in allolib ASCII to MIDI converter, along with the
