@@ -13,11 +13,11 @@ src := 'src'
 
 # Run the application.
 run:
-    exec ./run.sh
+    ./run.sh
 
 # Configure `cmake`.
 configure:
-    exec ./configure.sh
+    ./configure.sh
 
 # Format sources.
 format dir=src:
@@ -30,7 +30,7 @@ update:
 
 # Reset `alloinit` and `al_ext`.
 reset-deps:
-    rm -rf alloinit al_ext
+    rm -rf allolib al_ext
     ./alloinit -l . -L
 
 # Clean build artifacts.

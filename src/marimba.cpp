@@ -4,73 +4,73 @@
 #include "al/graphics/al_Shapes.hpp"
 #include "al/types/al_Color.hpp"
 
+#include "util.hpp"
+
 void Marimba::init() {
-    // Intialize envelope
-    mAmpEnv.curve(0.3); // make segments lines
-    mAmpEnv.levels(0, 1, 0.3, 0);
-    mAmpEnv.sustainPoint(2); // Make point 2 sustain until a release is issued
+    // Set the curvature of the ADSR envelope.
+    env.curve(0.3);
+    // Set ADSR envelope levels.
+    env.levels(0, 1, 0.3, 0);
+    // Sustain point 2 until release.
+    env.sustainPoint(2);
 
-    addRect(mMesh, 0, 0, 1, 1);
-    // This is a quick way to create parameters for the voice. Trigger
-    // parameters are meant to be set only when the voice starts, i.e. they
-    // are expected to be constant within a voice instance. (You can actually
-    // change them while you are prototyping, but their changes will only be
-    // stored and aplied when a note is triggered.)
+    // Set up the main parameters of the voice.
+    for (auto values : INTERNAL_TRIGGER_PARAMETER_DEFAULTS) {
+        createInternalTriggerParameter(identifier(std::get<0>(values)),
 
-    createInternalTriggerParameter("hardness", 2, 1, 5);
-    createInternalTriggerParameter("amplitude", 0.3, 0.0, 1.0);
-    createInternalTriggerParameter("frequency", 440, 20, 5000);
-    createInternalTriggerParameter("attackTime", 0.01, 0.001, 3.0);
-    createInternalTriggerParameter("decayTime", 0.1, 0.001, 3.0);
-    createInternalTriggerParameter("decayLevel", 0.6, 0.00, 1.0);
-    createInternalTriggerParameter("releaseTime", 0.2, 0.001, 10.0);
-    createInternalTriggerParameter("pan", 0.0, -1.0, 1.0);
+                                       std::get<1>(values), std::get<2>(values),
+                                       std::get<3>(values));
+    }
 
-    createInternalTriggerParameter("pianoKeyX");
-    createInternalTriggerParameter("pianoKeyY");
-    createInternalTriggerParameter("pianoKeyWidth");
-    createInternalTriggerParameter("pianoKeyHeight");
+    //// Visualization ////
+
+    // Initialize the visualization for the voice.
+    al::addRect(mesh, 0, 0, 1, 1);
 }
 
 void Marimba::onProcess(al::AudioIOData &io) {
-    // Get the values from the parameters and apply them to the corresponding
-    // unit generators. You could place these lines in the onTrigger() function,
-    // but placing them here allows for realtime prototyping on a running
-    // voice, rather than having to trigger a new voice to hear the changes.
-    // Parameters will update values once per audio callback because they
-    // are outside the sample processing loop.
-    mOsc.freq(getInternalParameterValue("frequency"));
-    mAmpEnv.lengths()[0] = getInternalParameterValue("attackTime");
-    mAmpEnv.lengths()[1] = getInternalParameterValue("decayTime");
-    mAmpEnv.levels()[1] = getInternalParameterValue("decayLevel");
-    mAmpEnv.lengths()[2] = getInternalParameterValue("releaseTime");
-    mPan.pos(getInternalParameterValue("pan"));
+    // Set values according to internal trigger parameter values.
+
+    osc.freq(value(Parameter::Frequency));
+
+    gam::real *adsrLengths = env.lengths();
+    adsrLengths[0] = value(Parameter::AttackTime);
+    adsrLengths[1] = value(Parameter::DecayTime);
+    adsrLengths[2] = value(Parameter::SustainTime);
+    adsrLengths[3] = value(Parameter::ReleaseTime);
+
+    pan.pos(value(Parameter::Pan));
+
     while (io()) {
-        float s1 = mOsc() * mAmpEnv() * getInternalParameterValue("amplitude");
-        float s2;
-        mEnvFollow(s1);
-        mPan(s1, s1, s2);
-        io.out(0) += s1;
-        io.out(1) += s2;
+        // Generate a sample in mono.
+        float sampleLeft = osc() * env() * value(Parameter::Amplitude);
+
+        // Visuals follow generated sample.
+        envFollower(sampleLeft);
+
+        float sampleRight;
+        // Split the mono sample into stereo.
+        pan(sampleLeft, sampleLeft, sampleRight);
+
+        // Send the output samples to their respective channels.
+        io.out(0) += sampleLeft;
+        io.out(1) += sampleRight;
     }
-    // We need to let the synth know that this voice is done
-    // by calling the free(). This takes the voice out of the
-    // rendering chain
-    if (mAmpEnv.done() && (mEnvFollow.value() < 0.001f))
+
+    if (env.done() && envFollower.value() < 0.001f) {
+        // This voice is finished, so we remove it from the rendering chain.
         free();
+    }
 }
 
 void Marimba::onProcess(al::Graphics &g) {
-    // Get the paramter values on every video frame, to apply changes to the
-    // current instance
-    float frequency = getInternalParameterValue("frequency");
-    float amplitude = getInternalParameterValue("amplitude");
+    float frequency = value(Parameter::Frequency);
+    float amplitude = value(Parameter::Amplitude);
 
-    float x = getInternalParameterValue("pianoKeyX");
-    float y = getInternalParameterValue("pianoKeyY");
-
-    float w = getInternalParameterValue("pianoKeyWidth");
-    float h = getInternalParameterValue("pianoKeyHeight");
+    float x = value(Parameter::VisualX);
+    float y = value(Parameter::VisualY);
+    float w = value(Parameter::VisualWidth);
+    float h = value(Parameter::VisualHeight);
 
     float hue = (frequency - 200) / 1000;
     float sat = amplitude;
@@ -80,12 +80,20 @@ void Marimba::onProcess(al::Graphics &g) {
     g.translate(x, y);
     g.scale(w, h);
 
-    g.color(al::Color(al::HSV(hue, sat, val), mEnvFollow.value() * 30));
+    g.color(al::Color(al::HSV(hue, sat, val), envFollower.value() * 30));
 
-    g.draw(mMesh);
+    g.draw(mesh);
     g.popMatrix();
 }
 
-void Marimba::onTriggerOn() { mAmpEnv.reset(); }
+void Marimba::onTriggerOn() { env.reset(); }
 
-void Marimba::onTriggerOff() { mAmpEnv.release(); }
+void Marimba::onTriggerOff() { env.release(); }
+
+const std::string &Marimba::identifier(const Parameter &param) const {
+    return parameterIdentifiers.at(param);
+}
+
+const float Marimba::value(const Parameter &param) {
+    return getInternalParameterValue(identifier(param));
+}
