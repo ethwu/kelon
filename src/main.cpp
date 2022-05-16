@@ -220,10 +220,12 @@ void MyApp::triggerNote(const unsigned int note) {
     auto *guiVoice = synthManager.voice();
     guiVoice->setValue(Marimba::Parameter::VisualWidth, width());
     guiVoice->setValue(Marimba::Parameter::VisualHeight, height());
+    guiVoice->setValue(Marimba::Parameter::MidiNote, note);
     guiVoice->setValue(Marimba::Parameter::Frequency, midiNoteToFreq(note));
     auto *voice = synthManager.synth().getVoice<Marimba>();
     voice->sync(*synthManager.voice());
-    synthManager.synthSequencer().addVoiceFromNow(voice, 0.01, 0.1);
+    // synthManager.synthSequencer().addVoiceFromNow(voice, 0.01, 0.1);
+    synthManager.triggerOn(note);
 }
 
 bool MyApp::onKeyDown(al::Keyboard const &k) {

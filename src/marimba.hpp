@@ -54,7 +54,7 @@ public:
     /// User-facing internal trigger parameter types.
     enum class Parameter {
         Hardness,
-        Note,
+        MidiNote,
         Frequency,
         Amplitude,
         AttackTime,
@@ -92,7 +92,7 @@ private:
 
     /// Default values for the internal trigger parameters.
     static const std::tuple<Parameter, float, float, float>
-        INTERNAL_TRIGGER_PARAMETER_DEFAULTS[10];
+        INTERNAL_TRIGGER_PARAMETER_DEFAULTS[11];
 };
 
 #endif
