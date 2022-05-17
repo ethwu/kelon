@@ -13,21 +13,17 @@ const char C4 = 60;
 const char C7 = 96;
 
 void Marimba::init() {
-    // Set the curvature of the ADSR envelope.
-    env.curve(0.3);
-    // Set ADSR envelope levels.
-    env.levels(0, 1, 0.4, 0);
-    // Sustain point 2 until release.
-    // env.sustainPoint(3);
+    rootEnv.curve(0);
+    fourthEnv.curve(0);
+    tenthEnv.curve(0);
 
-    env2.curve(1);
-    env2.levels(0, 1, 0.1, 0);
-    env2.sustainPoint(3);
+    rootEnv.levels(0, 1, 0.4, 0);
+    fourthEnv.levels(0, 1, 0.4, 0);
+    tenthEnv.levels(0, 1, 0.4, 0);
 
     // Set up the main parameters of the voice.
     for (const auto &values : INTERNAL_TRIGGER_PARAMETER_DEFAULTS) {
         createInternalTriggerParameter(identifier(std::get<0>(values)),
-
                                        std::get<1>(values), std::get<2>(values),
                                        std::get<3>(values));
     }
@@ -42,33 +38,65 @@ void Marimba::onProcess(al::AudioIOData &io) {
     // Set values according to internal trigger parameter values.
 
     const float hardness = value(Parameter::Hardness);
-    const float freq = value(Parameter::Frequency);
     const unsigned char note = value(Parameter::MidiNote);
+    const float freq = midiNoteToFreq(note);
 
-    sineOsc.freq(freq);
+    const float amplitude = value(Parameter::Amplitude);
 
-    // const float attackTime = std::pow(hardness, 2.0f) / 4096.0f;
-    // const float releaseTime = (96.0f - float(note)) / 80.0f + 0.3f;
-    // const float decayTime = attackTime;
+    /// Parameter controlling the brightness. Higher values favor the tenth
+    /// harmonic, while lower values favor the fourth.
+    const float brightness = (value(Parameter::Brightness) + 6.f) / 12.f;
+
+    // The decay time on note E3 (52) is 1.5s
+    // The decay time on note E6 (88) is 0.4s
+    // Therefore the decay function is d = 1.5f - 11.f * (note - 52.f) / 360.f
+
     const float attackTime = value(Parameter::AttackTime);
     const float decayTime = value(Parameter::DecayTime);
-    const float sustainTime = value(Parameter::SustainTime);
+    const float sustainTime =
+        value(Parameter::SustainTime) - 11.f * (note - 52.f) / 360.f;
     const float releaseTime = value(Parameter::ReleaseTime);
 
-    gam::real *adsrLengths = env.lengths();
-    adsrLengths[0] = value(Parameter::AttackTime);
-    adsrLengths[1] = value(Parameter::DecayTime);
-    adsrLengths[2] = value(Parameter::SustainTime);
-    adsrLengths[3] = value(Parameter::ReleaseTime);
+    const float first = value(Parameter::FirstOvertone);
+    const float second = value(Parameter::SecondOvertone);
+
+    rootOsc.freq(freq);
+    fourthOsc.freq(freq * first);
+    tenthOsc.freq(freq * second);
+
+    gam::real *rootLengths = rootEnv.lengths();
+    gam::real *fourthLengths = fourthEnv.lengths();
+    gam::real *tenthLengths = tenthEnv.lengths();
+
+    fourthLengths[0] = (rootLengths[0] = attackTime) / first;
+    fourthLengths[1] = (rootLengths[1] = decayTime) / first;
+    fourthLengths[2] = (rootLengths[2] = sustainTime) / first;
+    fourthLengths[3] = (rootLengths[3] = releaseTime) / first;
+
+    tenthLengths[0] = attackTime / second;
+    tenthLengths[1] = decayTime / second;
+    tenthLengths[2] = sustainTime / second;
+    tenthLengths[3] = releaseTime / second;
+
+    const float scaledHardness = hardness / SCALE_HARDNESS;
 
     pan.pos(value(Parameter::Pan));
 
     while (io()) {
         // Generate a sample in mono.
-        float sampleLeft = sineOsc() * env() * value(Parameter::Amplitude);
+        float fundamental = rootOsc() * rootEnv() / SCALE_AMPLITUDE;
 
-        // Visuals follow generated sample.
-        envFollower(sampleLeft);
+        float fourth = fourthOsc() * fourthEnv() * scaledHardness /
+                       SCALE_AMPLITUDE * (1.f - brightness);
+        float tenth = tenthOsc() * tenthEnv() * scaledHardness /
+                      SCALE_AMPLITUDE * brightness;
+
+        // Set followers after the components of the sample.
+        rootFollower(fundamental);
+        fourthFollower(fourth);
+        tenthFollower(tenth);
+
+        float sampleLeft = fundamental + fourth + tenth;
 
         float sampleRight;
         // Split the mono sample into stereo.
@@ -79,49 +107,66 @@ void Marimba::onProcess(al::AudioIOData &io) {
         io.out(1) += sampleRight;
     }
 
-    if (env.done() && envFollower.value() < 0.001f) {
+    if (rootEnv.done() && rootFollower.value() < 0.001f) {
         // This voice is finished, so we remove it from the rendering chain.
         free();
     }
 }
 
-void Marimba::onProcess(al::Graphics &g) {
-    const float note = value(Parameter::MidiNote);
-    const float frequency = value(Parameter::Frequency);
-    const float amplitude = value(Parameter::Amplitude);
-    // Offset the note to zero out at the minimum note.
-    const float offsetNote = note - RANGE.first;
-
+void Marimba::drawNoteVisual(al::Graphics &g, const float offsetNote,
+                             const float amplitude, const bool reverse) {
+    // The range of the keyboard.
     const float range = RANGE.second - RANGE.first;
 
     /// Width of the window.
     const float windowWidth = float(value(Parameter::VisualWidth));
+    /// Height of a divided portion of the window.
+    const float divisionHeight =
+        float(value(Parameter::VisualHeight)) / VISUAL_DIVISIONS;
 
     /// Width of the visual.
     const float w = windowWidth / range;
-    const float hardness = value(Parameter::Hardness);
+
     /// Height of the visual.
-    const float h = value(Parameter::VisualHeight) * amplitude;
+    const float h = amplitude * 3.f * divisionHeight * (VISUAL_DIVISIONS - 1);
 
     const float x = w * (offsetNote - 0.5);
 
     const float hue = offsetNote / range;
-    const float sat = hardness / 12.f;
-    const float val = 0.9;
+    const float sat = reduceRange(value(Parameter::Hardness) / 12.f);
+    const float val = 1.f;
 
     g.pushMatrix();
-    g.translate(x, 0);
+    g.translate(x, divisionHeight - (reverse ? h : 0.f));
     g.scale(w, h);
 
-    g.color(al::Color(al::HSV(hue, sat, val), envFollower.value() * 30));
+    g.color(al::Color(al::HSV(hue, sat, val), amplitude * 30));
 
     g.draw(mesh);
     g.popMatrix();
 }
 
-void Marimba::onTriggerOn() { env.reset(); }
+void Marimba::onProcess(al::Graphics &g) {
+    // Offset the note to zero out at the minimum note.
+    const float offsetNote = value(Parameter::MidiNote) - RANGE.first;
 
-void Marimba::onTriggerOff() { return; env.release(); }
+    drawNoteVisual(g, offsetNote, rootFollower.value(), false);
+    drawNoteVisual(g, offsetNote + 24.f, fourthFollower.value(), true);
+    drawNoteVisual(g, offsetNote + 52.f, tenthFollower.value(), true);
+}
+
+void Marimba::onTriggerOn() {
+    rootEnv.reset();
+    fourthEnv.reset();
+    tenthEnv.reset();
+}
+
+void Marimba::onTriggerOff() {
+    return;
+    rootEnv.release();
+    fourthEnv.release();
+    tenthEnv.release();
+}
 
 const std::string &Marimba::identifier(const Parameter &param) const {
     return PARAMETER_IDENTIFIERS.at(param);
@@ -142,7 +187,27 @@ void Marimba::sync(Marimba &other) {
     }
 }
 
+void Marimba::marimba() {
+    setValue(Parameter::AttackTime, 0.015f);
+    setValue(Parameter::Hardness, 3.f);
+    setValue(Parameter::Brightness, -1.f);
+    setValue(Parameter::FirstOvertone, 4.f);
+    setValue(Parameter::SecondOvertone, 10.08f);
+}
+
+void Marimba::xylophone() {
+    setValue(Parameter::AttackTime, 0.01f);
+    setValue(Parameter::Hardness, 8.f);
+    setValue(Parameter::Brightness, -3.f);
+    setValue(Parameter::FirstOvertone, 3.f);
+    setValue(Parameter::SecondOvertone, 6.f);
+}
+
 const std::pair<char, char> Marimba::RANGE = {C2, C7};
+
+const float Marimba::SCALE_HARDNESS = 48.f;
+const float Marimba::SCALE_AMPLITUDE = 2.f;
+const float Marimba::VISUAL_DIVISIONS = 8.f;
 
 const float Marimba::MINIMUM_ADSR_TIME = 0.001;
 const float Marimba::MAXIMUM_ADSR_TIME = 3.0;
@@ -153,43 +218,44 @@ const float Marimba::PARAMETER_DEFAULT_MAXIMUM_VALUE = 9999.0;
 const std::map<Marimba::Parameter, std::string> Marimba::PARAMETER_IDENTIFIERS =
     {
         {Parameter::Hardness, "hardness"},
+        {Parameter::Brightness, "brightness"},
         {Parameter::MidiNote, "midi_note"},
-        {Parameter::Frequency, "frequency"},
         {Parameter::Amplitude, "amplitude"},
         {Parameter::AttackTime, "attack_time"},
         {Parameter::DecayTime, "decay_time"},
         {Parameter::SustainTime, "sustain_time"},
         {Parameter::ReleaseTime, "release_time"},
         {Parameter::Pan, "pan"},
+        {Parameter::FirstOvertone, "first_overtone"},
+        {Parameter::SecondOvertone, "second_overtone"},
         {Parameter::VisualWidth, "visual_w"},
         {Parameter::VisualHeight, "visual_h"},
 };
 
 const std::tuple<Marimba::Parameter, float, float, float>
-    Marimba::INTERNAL_TRIGGER_PARAMETER_DEFAULTS[11] = {
-        {Marimba::Parameter::Hardness, 2, 0.8, 12},
+    Marimba::INTERNAL_TRIGGER_PARAMETER_DEFAULTS[13] = {
+        {Marimba::Parameter::Hardness, 3, 0, 12},
+        {Marimba::Parameter::Brightness, -1, -6, 6},
 
-        {Marimba::Parameter::Frequency, 440, 27.50, 13289.75},
-        {Marimba::Parameter::MidiNote, 69, 0, 127},
-        {Marimba::Parameter::Amplitude, 0.3, 0.0, 1.0},
+        {Marimba::Parameter::MidiNote, C4, 0, 127},
+        {Marimba::Parameter::Amplitude, 0.8, 0.0, 1.0},
 
-        {Marimba::Parameter::AttackTime, 0.01, Marimba::MINIMUM_ADSR_TIME,
+        {Marimba::Parameter::AttackTime, 0.015, Marimba::MINIMUM_ADSR_TIME,
          Marimba::MAXIMUM_ADSR_TIME},
-        {Marimba::Parameter::DecayTime, 0.4, Marimba::MINIMUM_ADSR_TIME,
+        {Marimba::Parameter::DecayTime, 0.15, Marimba::MINIMUM_ADSR_TIME,
          Marimba::MAXIMUM_ADSR_TIME},
-        {Marimba::Parameter::SustainTime, 0.3, Marimba::MINIMUM_ADSR_TIME,
+        {Marimba::Parameter::SustainTime, 1.5, Marimba::MINIMUM_ADSR_TIME,
          Marimba::MAXIMUM_ADSR_TIME},
-        {Marimba::Parameter::ReleaseTime, 0.0, Marimba::MINIMUM_ADSR_TIME,
+        {Marimba::Parameter::ReleaseTime, 0.1, Marimba::MINIMUM_ADSR_TIME,
          Marimba::MAXIMUM_ADSR_TIME},
 
         {Marimba::Parameter::Pan, 0.0, -1.0, 1.0},
 
+        {Marimba::Parameter::FirstOvertone, 4.f, 3.f, 4.f},
+        {Marimba::Parameter::SecondOvertone, 10.08f, 6.f, 10.08f},
+
         {Marimba::Parameter::VisualWidth,
-         Marimba::PARAMETER_DEFAULT_DEFAULT_VALUE,
-         Marimba::PARAMETER_DEFAULT_MINIMUM_VALUE,
-         Marimba::PARAMETER_DEFAULT_MAXIMUM_VALUE},
+         Marimba::PARAMETER_DEFAULT_DEFAULT_VALUE, 0, 4096},
         {Marimba::Parameter::VisualHeight,
-         Marimba::PARAMETER_DEFAULT_DEFAULT_VALUE,
-         Marimba::PARAMETER_DEFAULT_MINIMUM_VALUE,
-         Marimba::PARAMETER_DEFAULT_MAXIMUM_VALUE},
+         Marimba::PARAMETER_DEFAULT_DEFAULT_VALUE, 0, 4096},
 };

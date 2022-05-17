@@ -10,6 +10,7 @@
 #include "Gamma/Analysis.h"
 #include "Gamma/Effects.h"
 #include "Gamma/Envelope.h"
+#include "Gamma/Filter.h"
 
 #include "al/scene/al_PolySynth.hpp"
 
@@ -23,17 +24,22 @@ public:
 
     /// 2-channel panner.
     gam::Pan<> pan;
-    /// Sine wave oscillator.
-    gam::Sine<> sineOsc;
-    gam::Sine<> sineOsc2;
-    /// Low frequency oscillator.
-    gam::LFO<> lfOsc;
-    /// ADSR envelope.
-    gam::Env<3> env;
-    gam::Env<3> env2;
 
-    /// Envelope follower for graphics.
-    gam::EnvFollow<> envFollower;
+
+    // Oscillators.
+
+    gam::Sine<> rootOsc;
+    gam::Sine<> fourthOsc;
+    gam::Sine<> tenthOsc;
+
+    gam::Env<3> rootEnv;
+    gam::Env<3> fourthEnv;
+    gam::Env<3> tenthEnv;
+
+    /// Envelope followers for graphics.
+    gam::EnvFollow<> rootFollower;
+    gam::EnvFollow<> fourthFollower;
+    gam::EnvFollow<> tenthFollower;
     /// Graphics mesh.
     al::Mesh mesh;
 
@@ -54,14 +60,16 @@ public:
     /// User-facing internal trigger parameter types.
     enum class Parameter {
         Hardness,
+        Brightness,
         MidiNote,
-        Frequency,
         Amplitude,
         AttackTime,
         DecayTime,
         SustainTime,
         ReleaseTime,
         Pan,
+        FirstOvertone,
+        SecondOvertone,
         VisualWidth,
         VisualHeight,
     };
@@ -75,7 +83,23 @@ public:
     /// does not modify the other voice.
     void sync(Marimba &other);
 
+    /// Set this instrument in marimba mode.
+    void marimba();
+    /// Set this instrument in xylophone mode.
+    void xylophone();
+
 private:
+    /// Draw the visual associated with a given note.
+    void drawNoteVisual(al::Graphics &g, const float offsetNote, const float adjustedAmplitude, const bool reverse);
+
+    /// Factor to scale hardness by.
+    static const float SCALE_HARDNESS;
+    /// Factor to reduce overall amplitude by.
+    static const float SCALE_AMPLITUDE;
+
+    /// Number of divisions in the window. Controls how much of the screen is devoted to the fundamental vs the overtones.
+    static const float VISUAL_DIVISIONS;
+
     /// Minimum time for ADSR envelope values.
     static const float MINIMUM_ADSR_TIME;
     /// Maximum time for ADSR envelope values.
@@ -92,7 +116,7 @@ private:
 
     /// Default values for the internal trigger parameters.
     static const std::tuple<Parameter, float, float, float>
-        INTERNAL_TRIGGER_PARAMETER_DEFAULTS[11];
+        INTERNAL_TRIGGER_PARAMETER_DEFAULTS[13];
 };
 
 #endif

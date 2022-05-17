@@ -28,20 +28,8 @@ public:
 
     // Octave offset.
     int offset = 0;
-
-    // Mesh and variables for drawing piano keys
-    al::Mesh meshKey;
-    float keyWidth, keyHeight;
-    float keyPadding = 2.f;
-    float fontSize;
-    std::string whitekeyLabels[20] = {"Z", "X", "C", "V", "B", "N", "M",
-                                      ",", ".", "/", "Q", "W", "E", "R",
-                                      "T", "Y", "U", "I", "O", "P"};
-    std::string blackkeyLabels[20] = {"S", "D", "", "G", "H", "J", "",
-                                      "L", ";", "", "2", "3", "",  "5",
-                                      "6", "7", "", "9", "0", ""};
-    // Font renderder
-    al::FontRenderer fontRender;
+    // Whether to hold notes or not.
+    bool holdNotes = true;
 
     // This function is called right after the window is created
     // It provides a grphics context to initialize ParameterGUI

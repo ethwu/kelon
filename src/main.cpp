@@ -95,23 +95,10 @@ void MyApp::onCreate() {
 void MyApp::onInit() {
     al::imguiInit();
 
-    keyWidth =
-        float(width()) / float(Marimba::RANGE.second - Marimba::RANGE.first);
+    auto *voice = synthManager.voice();
 
-    addRect(meshKey, 0, 0, keyWidth, height());
-
-    // // Cacluate the size of piano keys based on the app window size
-    // float w = float(width());
-    // float h = float(height());
-    // keyWidth = w / 10.f - keyPadding * 2.f;
-    // keyHeight = h / 2.f - keyPadding * 2.f;
-    // fontSize = keyWidth * 0.2;
-
-    // // Create a mesh that will be drawn as piano keys
-    // addRect(meshKey, 0, 0, keyWidth, keyHeight);
-
-    // // Set the font renderer
-    // fontRender.load(al::Font::defaultFont().c_str(), 60, 1024);
+    voice->setValue(Marimba::Parameter::VisualWidth, width());
+    voice->setValue(Marimba::Parameter::VisualHeight, height());
 
     if (midiIn.getPortCount() > 0) {
         // Bind MIDI handler if there is a MIDI device connected.
@@ -141,7 +128,9 @@ void MyApp::onAnimate(double dt) {
     // The GUI is prepared here
     al::imguiBeginFrame();
     // Draw a window that contains the synth control panel
-    synthManager.drawSynthControlPanel();
+    synthManager.drawFields();
+    synthManager.drawSynthSequencer();
+    synthManager.drawSynthRecorder();
     al::imguiEndFrame();
 }
 
@@ -217,14 +206,8 @@ void MyApp::onDraw(al::Graphics &g) {
 }
 
 void MyApp::triggerNote(const unsigned int note) {
-    auto *guiVoice = synthManager.voice();
-    guiVoice->setValue(Marimba::Parameter::VisualWidth, width());
-    guiVoice->setValue(Marimba::Parameter::VisualHeight, height());
-    guiVoice->setValue(Marimba::Parameter::MidiNote, note);
-    guiVoice->setValue(Marimba::Parameter::Frequency, midiNoteToFreq(note));
-    auto *voice = synthManager.synth().getVoice<Marimba>();
-    voice->sync(*synthManager.voice());
-    // synthManager.synthSequencer().addVoiceFromNow(voice, 0.01, 0.1);
+    auto *voice = synthManager.voice();
+    voice->setValue(Marimba::Parameter::MidiNote, note);
     synthManager.triggerOn(note);
 }
 
@@ -239,6 +222,16 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
     case '=':
         useCompressor = !useCompressor;
         std::cerr << "use compressor: " << useCompressor << std::endl;
+        break;
+    case al::Keyboard::Key::BACKSPACE:
+        holdNotes = !holdNotes;
+        std::cerr << "hold notes: " << holdNotes << std::endl;
+        break;
+    case '[':
+        voice->xylophone();
+        break;
+    case ']':
+        voice->marimba();
         break;
     case al::Keyboard::Key::RIGHT:
         // Increase octave by one on right arrow.
@@ -267,19 +260,19 @@ bool MyApp::onKeyDown(al::Keyboard const &k) {
 
 bool MyApp::onKeyUp(al::Keyboard const &k) {
     int midiNote = al::asciiToMIDI(k.key());
-    if (midiNote > 0) {
+    if (midiNote > 0 && (!holdNotes || true)) {
         synthManager.triggerOff(midiNote);
     }
     return true;
 }
 
 void MyApp::onMIDIMessage(const al::MIDIMessage &m) {
+    auto *voice = synthManager.voice();
     switch (m.type()) {
     case al::MIDIByte::NOTE_ON: {
         int midiNote = m.noteNumber();
         if (midiNote > 0 && m.velocity() > 0.001) {
-            synthManager.voice()->setValue(Marimba::Parameter::Amplitude,
-                                           m.velocity());
+            voice->setValue(Marimba::Parameter::Amplitude, m.velocity());
             triggerNote(midiNote);
         }
         break;
@@ -287,20 +280,38 @@ void MyApp::onMIDIMessage(const al::MIDIMessage &m) {
     case al::MIDIByte::NOTE_OFF: {
         int midiNote = m.noteNumber();
         // printf("Note OFF %u, Vel %f\n", m.noteNumber(), m.velocity());
-        synthManager.triggerOff(midiNote);
+        if (!holdNotes || true)
+            synthManager.triggerOff(midiNote);
         break;
     }
+    case al::MIDIByte::CONTROL_CHANGE:
+        // std::cerr << "cc " << int(m.controlNumber()) << ": " <<
+        // m.controlValue()
+        //   << std::endl;
+        switch (m.controlNumber()) {
+        case 7:
+            voice->setValue(Marimba::Parameter::Hardness,
+                            m.controlValue() * 12.f);
+            break;
+        case 11:
+            voice->setValue(Marimba::Parameter::Brightness,
+                            m.controlValue() * 12.f - 6.f);
+            break;
+        case 14:
+            break;
+        case 15:
+            break;
+        }
+        break;
+
     default:;
     }
 }
 
 void MyApp::onResize(int w, int h) {
-
-    // Recaculate the size of piano keys based new window size
-    keyWidth = w / 10.f - keyPadding * 2.f;
-    keyHeight = h / 2.f - keyPadding * 2.f;
-    fontSize = keyWidth * 0.2;
-    addRect(meshKey, 0, 0, keyWidth, keyHeight);
+    auto *voice = synthManager.voice();
+    voice->setValue(Marimba::Parameter::VisualWidth, w);
+    voice->setValue(Marimba::Parameter::VisualHeight, h);
 }
 
 void MyApp::onExit() { al::imguiShutdown(); }
