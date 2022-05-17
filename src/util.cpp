@@ -10,7 +10,7 @@ float midiNoteToFreq(const unsigned char note) {
 
 /// Get the MIDI note of a frequency.
 unsigned char freqToMidiNote(const float freq) {
-    return 12 * std::log2(freq / 440.f) + 69;
+    return char(12.f * std::log2(freq / 440.f) + 69.f);
 }
 
 /// Reduce the range of a float from [0.0, 1.0] to [0.2, 1.0].

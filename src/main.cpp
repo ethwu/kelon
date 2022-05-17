@@ -295,7 +295,7 @@ void MyApp::onMIDIMessage(const al::MIDIMessage &m) {
             break;
         case 11:
             voice->setValue(Marimba::Parameter::Brightness,
-                            m.controlValue() * 12.f - 6.f);
+                            m.controlValue() * 12.f);
             break;
         case 14:
             break;

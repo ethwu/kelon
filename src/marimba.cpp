@@ -10,6 +10,7 @@
 
 const char C2 = 36;
 const char C4 = 60;
+const char C6 = 84;
 const char C7 = 96;
 
 void Marimba::init() {
@@ -17,9 +18,9 @@ void Marimba::init() {
     fourthEnv.curve(0);
     tenthEnv.curve(0);
 
-    rootEnv.levels(0, 1, 0.4, 0);
-    fourthEnv.levels(0, 1, 0.4, 0);
-    tenthEnv.levels(0, 1, 0.4, 0);
+    rootEnv.levels(0, 1, 0.3, 0);
+    fourthEnv.levels(0, 0.9, 0.3, 0);
+    tenthEnv.levels(0, 0.8, 0.3, 0);
 
     // Set up the main parameters of the voice.
     for (const auto &values : INTERNAL_TRIGGER_PARAMETER_DEFAULTS) {
@@ -45,7 +46,10 @@ void Marimba::onProcess(al::AudioIOData &io) {
 
     /// Parameter controlling the brightness. Higher values favor the tenth
     /// harmonic, while lower values favor the fourth.
-    const float brightness = (value(Parameter::Brightness) + 6.f) / 12.f;
+    const float brightness = value(Parameter::Brightness) / 24.f;
+
+    // Location as a percent distance from C6.
+    const float location = 1.f - float(note - C6) / float(RANGE.second - C6);
 
     // The decay time on note E3 (52) is 1.5s
     // The decay time on note E6 (88) is 0.4s
@@ -53,8 +57,8 @@ void Marimba::onProcess(al::AudioIOData &io) {
 
     const float attackTime = value(Parameter::AttackTime);
     const float decayTime = value(Parameter::DecayTime);
-    const float sustainTime =
-        value(Parameter::SustainTime) - 11.f * (note - 52.f) / 360.f;
+    const float sustainTime = std::fmax(
+        value(Parameter::SustainTime) - 11.f * (note - 52.f) / 360.f, 0.15f);
     const float releaseTime = value(Parameter::ReleaseTime);
 
     const float first = value(Parameter::FirstOvertone);
@@ -89,7 +93,7 @@ void Marimba::onProcess(al::AudioIOData &io) {
         float fourth = fourthOsc() * fourthEnv() * scaledHardness /
                        SCALE_AMPLITUDE * (1.f - brightness);
         float tenth = tenthOsc() * tenthEnv() * scaledHardness /
-                      SCALE_AMPLITUDE * brightness;
+                      SCALE_AMPLITUDE * brightness * std::fmin(location, 1.f);
 
         // Set followers after the components of the sample.
         rootFollower(fundamental);
@@ -151,8 +155,14 @@ void Marimba::onProcess(al::Graphics &g) {
     const float offsetNote = value(Parameter::MidiNote) - RANGE.first;
 
     drawNoteVisual(g, offsetNote, rootFollower.value(), false);
-    drawNoteVisual(g, offsetNote + 24.f, fourthFollower.value(), true);
-    drawNoteVisual(g, offsetNote + 52.f, tenthFollower.value(), true);
+    drawNoteVisual(g,
+                   freqToMidiNote(midiNoteToFreq(offsetNote) *
+                                  value(Parameter::FirstOvertone)),
+                   fourthFollower.value(), true);
+    drawNoteVisual(g,
+                   freqToMidiNote(midiNoteToFreq(offsetNote) *
+                                  value(Parameter::SecondOvertone)),
+                   tenthFollower.value(), true);
 }
 
 void Marimba::onTriggerOn() {
@@ -190,27 +200,27 @@ void Marimba::sync(Marimba &other) {
 void Marimba::marimba() {
     setValue(Parameter::AttackTime, 0.015f);
     setValue(Parameter::Hardness, 3.f);
-    setValue(Parameter::Brightness, -1.f);
+    setValue(Parameter::Brightness, 8.f);
     setValue(Parameter::FirstOvertone, 4.f);
     setValue(Parameter::SecondOvertone, 10.08f);
 }
 
 void Marimba::xylophone() {
     setValue(Parameter::AttackTime, 0.01f);
-    setValue(Parameter::Hardness, 8.f);
+    setValue(Parameter::Hardness, 9.f);
     setValue(Parameter::Brightness, -3.f);
     setValue(Parameter::FirstOvertone, 3.f);
     setValue(Parameter::SecondOvertone, 6.f);
 }
 
-const std::pair<char, char> Marimba::RANGE = {C2, C7};
+const std::pair<char, char> Marimba::RANGE = {C2, C7 + 12};
 
 const float Marimba::SCALE_HARDNESS = 48.f;
 const float Marimba::SCALE_AMPLITUDE = 2.f;
 const float Marimba::VISUAL_DIVISIONS = 8.f;
 
 const float Marimba::MINIMUM_ADSR_TIME = 0.001;
-const float Marimba::MAXIMUM_ADSR_TIME = 3.0;
+const float Marimba::MAXIMUM_ADSR_TIME = 2.0;
 const float Marimba::PARAMETER_DEFAULT_DEFAULT_VALUE = 0.0;
 const float Marimba::PARAMETER_DEFAULT_MINIMUM_VALUE = -9999.0;
 const float Marimba::PARAMETER_DEFAULT_MAXIMUM_VALUE = 9999.0;
@@ -235,7 +245,7 @@ const std::map<Marimba::Parameter, std::string> Marimba::PARAMETER_IDENTIFIERS =
 const std::tuple<Marimba::Parameter, float, float, float>
     Marimba::INTERNAL_TRIGGER_PARAMETER_DEFAULTS[13] = {
         {Marimba::Parameter::Hardness, 3, 0, 12},
-        {Marimba::Parameter::Brightness, -1, -6, 6},
+        {Marimba::Parameter::Brightness, 8, 0, 12},
 
         {Marimba::Parameter::MidiNote, C4, 0, 127},
         {Marimba::Parameter::Amplitude, 0.8, 0.0, 1.0},
