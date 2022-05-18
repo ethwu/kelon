@@ -9,9 +9,7 @@
 #include "compressor.hpp"
 #include "marimba.hpp"
 
-/// The helper function used to visualize which keys pressed or released on a
-/// virtual piano.
-int asciiToKeyLabelIndex(int asciiKey);
+int main();
 
 class MyApp : public al::App, al::MIDIMessageHandler {
 public:

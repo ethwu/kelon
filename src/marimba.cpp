@@ -18,9 +18,9 @@ void Marimba::init() {
     fourthEnv.curve(0);
     tenthEnv.curve(0);
 
-    rootEnv.levels(0, 1, 0.3, 0);
-    fourthEnv.levels(0, 0.9, 0.3, 0);
-    tenthEnv.levels(0, 0.8, 0.3, 0);
+    rootEnv.levels(0, 1, 0.2, 0);
+    fourthEnv.levels(0, 0.9, 0.1, 0);
+    tenthEnv.levels(0, 0.8, 0.1, 0);
 
     // Set up the main parameters of the voice.
     for (const auto &values : INTERNAL_TRIGGER_PARAMETER_DEFAULTS) {
@@ -46,7 +46,7 @@ void Marimba::onProcess(al::AudioIOData &io) {
 
     /// Parameter controlling the brightness. Higher values favor the tenth
     /// harmonic, while lower values favor the fourth.
-    const float brightness = value(Parameter::Brightness) / 24.f;
+    const float brightness = value(Parameter::Brightness) / 48.f;
 
     // Location as a percent distance from C6.
     const float location = 1.f - float(note - C6) / float(RANGE.second - C6);
@@ -199,8 +199,8 @@ void Marimba::sync(Marimba &other) {
 
 void Marimba::marimba() {
     setValue(Parameter::AttackTime, 0.015f);
-    setValue(Parameter::Hardness, 3.f);
-    setValue(Parameter::Brightness, 8.f);
+    setValue(Parameter::Hardness, 6.f);
+    setValue(Parameter::Brightness, 7.f);
     setValue(Parameter::FirstOvertone, 4.f);
     setValue(Parameter::SecondOvertone, 10.08f);
 }
@@ -208,7 +208,7 @@ void Marimba::marimba() {
 void Marimba::xylophone() {
     setValue(Parameter::AttackTime, 0.01f);
     setValue(Parameter::Hardness, 9.f);
-    setValue(Parameter::Brightness, -3.f);
+    setValue(Parameter::Brightness, 3.f);
     setValue(Parameter::FirstOvertone, 3.f);
     setValue(Parameter::SecondOvertone, 6.f);
 }

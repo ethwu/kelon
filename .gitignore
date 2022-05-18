@@ -25,4 +25,5 @@ build
 *.binary
 
 apps/
+*-data/
 imgui.ini
