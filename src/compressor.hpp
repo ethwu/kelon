@@ -2,10 +2,9 @@
 #ifndef COMPRESSOR_PLUGIN_H
 #define COMPRESSOR_PLUGIN_H
 
-#include "al/app/al_App.hpp"
-
 #include "SimpleCompressor/src/GainReductionComputer.h"
 #include "SimpleCompressor/src/LookAheadGainReduction.h"
+#include "al/app/al_App.hpp"
 
 #include <iomanip>
 #include <iostream>

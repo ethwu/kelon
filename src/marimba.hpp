@@ -1,6 +1,6 @@
 
-#ifndef MARIMBA_H
-#define MARIMBA_H
+#ifndef PADAUK_MARIMBA_H
+#define PADAUK_MARIMBA_H
 
 #include <map>
 #include <string>
@@ -14,6 +14,8 @@
 
 #include "al/scene/al_PolySynth.hpp"
 
+namespace padauk {
+
 /**
  * Instrument for mallet percussion.
  */
@@ -24,7 +26,6 @@ public:
 
     /// 2-channel panner.
     gam::Pan<> pan;
-
 
     // Oscillators.
 
@@ -90,14 +91,16 @@ public:
 
 private:
     /// Draw the visual associated with a given note.
-    void drawNoteVisual(al::Graphics &g, const float offsetNote, const float adjustedAmplitude, const bool reverse);
+    void drawNoteVisual(al::Graphics &g, const float offsetNote,
+                        const float adjustedAmplitude, const bool reverse);
 
     /// Factor to scale hardness by.
     static const float SCALE_HARDNESS;
     /// Factor to reduce overall amplitude by.
     static const float SCALE_AMPLITUDE;
 
-    /// Number of divisions in the window. Controls how much of the screen is devoted to the fundamental vs the overtones.
+    /// Number of divisions in the window. Controls how much of the screen is
+    /// devoted to the fundamental vs the overtones.
     static const float VISUAL_DIVISIONS;
 
     /// Minimum time for ADSR envelope values.
@@ -118,5 +121,7 @@ private:
     static const std::tuple<Parameter, float, float, float>
         INTERNAL_TRIGGER_PARAMETER_DEFAULTS[13];
 };
+
+}; // namespace padauk
 
 #endif

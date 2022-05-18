@@ -8,10 +8,7 @@
 
 #include "util.hpp"
 
-const char C2 = 36;
-const char C4 = 60;
-const char C6 = 84;
-const char C7 = 96;
+namespace padauk {
 
 void Marimba::init() {
     rootEnv.curve(0);
@@ -269,3 +266,5 @@ const std::tuple<Marimba::Parameter, float, float, float>
         {Marimba::Parameter::VisualHeight,
          Marimba::PARAMETER_DEFAULT_DEFAULT_VALUE, 0, 4096},
 };
+
+}; // namespace padauk
