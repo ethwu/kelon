@@ -8,5 +8,5 @@
 
 result=$?
 if [ ${result} == 0 ]; then
-  ./bin/$(cat app_name.txt)
+  ./bin/"$(cat ./src/bin/name.txt)"
 fi

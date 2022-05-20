@@ -6,7 +6,7 @@
 	path = al_ext
 	url = git@github.com:Allosphere-Research-Group/al_ext.git
 	shallow = true
-[submodule "src/SimpleCompressor"]
-	path = src/SimpleCompressor
+[submodule "SimpleCompressor"]
+	path = SimpleCompressor
 	url = git@github.com:DanielRudrich/SimpleCompressor.git
 	shallow = true

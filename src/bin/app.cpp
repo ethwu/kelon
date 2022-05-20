@@ -3,10 +3,9 @@
 
 #include <iostream>
 
-namespace padauk {
+namespace kelon {
 
 void App::triggerNote(const unsigned char note) {
-    synthManager.voice()->setValue(Marimba::Parameter::MidiNote, note);
     synthManager.triggerOn(note);
 }
 
@@ -22,7 +21,7 @@ void App::onInit() {
 
     auto *const voice = synthManager.voice();
 
-    voice->setValue(Marimba::Parameter::VisualWidth, width());
+    voice->value(MarimbaParameter::VisualWidth, width());
 
     if (midiIn.getPortCount() > 0) {
         // Bind MIDI handler if there is a MIDI device connected.
@@ -40,17 +39,11 @@ void App::onInit() {
 
 void App::onResize(const int w, const int h) {
     auto *const voice = synthManager.voice();
-    voice->setValue(Marimba::Parameter::VisualWidth, w);
-    voice->setValue(Marimba::Parameter::VisualHeight, h);
+    voice->value(MarimbaParameter::VisualWidth, w);
+    voice->value(MarimbaParameter::VisualHeight, h);
 }
 
-void App::onSound(al::AudioIOData &io) {
-    // if (useCompressor) {
-    //     compressor(io);
-    // }
-
-    synthManager.render(io);
-}
+void App::onSound(al::AudioIOData &io) { synthManager.render(io); }
 
 void App::onDraw(al::Graphics &g) {
     g.clear();
@@ -85,11 +78,6 @@ bool App::onKeyDown(const al::Keyboard &k) {
     case al::Keyboard::LEFT:
         keyboardParameters.octaveOffset--;
         break;
-    // case '`':
-    //     useCompressor = !useCompressor;
-    //     std::cerr << std::boolalpha << "Use compressor? " << useCompressor
-    //               << std::endl;
-    //     break;
     default:
         if (('a' <= key && 'z' >= key) || ('0' <= key && '9' >= key)) {
             triggerNote(al::asciiToMIDI(key) +
@@ -119,7 +107,7 @@ void App::onMIDIMessage(const al::MIDIMessage &m) {
     case al::MIDIByte::NOTE_ON: {
         const double velocity = m.velocity();
         if (midiNote > 0 && velocity > 0.001) {
-            voice->setValue(Marimba::Parameter::Amplitude, velocity);
+            voice->value(MarimbaParameter::Amplitude, velocity);
             triggerNote(midiNote);
         }
         break;
@@ -131,11 +119,10 @@ void App::onMIDIMessage(const al::MIDIMessage &m) {
         const double controlValue = m.controlValue();
         switch (m.controlNumber()) {
         case 7:
-            voice->setValue(Marimba::Parameter::Hardness, controlValue * 12.f);
+            voice->value(MarimbaParameter::Hardness, controlValue);
             break;
         case 11:
-            voice->setValue(Marimba::Parameter::Brightness,
-                            controlValue * 12.f);
+            voice->value(MarimbaParameter::Brightness, controlValue);
             break;
         case 14:
             break;
@@ -149,4 +136,4 @@ void App::onMIDIMessage(const al::MIDIMessage &m) {
 
 void App::onExit() { al::imguiShutdown(); }
 
-}; // namespace padauk
+}; // namespace kelon

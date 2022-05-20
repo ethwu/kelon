@@ -1,0 +1,13 @@
+include//kelon/marimba/additive.hpp
+include//kelon/marimba/instruments.hpp
+include//kelon/marimba/parameter.hpp
+include//kelon/marimba/visualization.hpp
+include//kelon/util.hpp
+src//bin/app.cpp
+src//bin/app.hpp
+src//bin/main.cpp
+src//lib/marimba/additive.cpp
+src//lib/marimba/instruments.cpp
+src//lib/marimba/parameter.cpp
+src//lib/marimba/visualization.cpp
+src//lib/util.cpp

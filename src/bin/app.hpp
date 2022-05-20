@@ -1,13 +1,13 @@
 
-#ifndef PADAUK_APP_H
-#define PADAUK_APP_H
+#ifndef KELON_APP_H
+#define KELON_APP_H
 
-#include "al/app/al_App.hpp"
-#include "al/ui/al_ControlGUI.hpp"
+#include <al/app/al_App.hpp>
+#include <al/ui/al_ControlGUI.hpp>
 
-#include "marimba.hpp"
+#include <kelon/marimba/instruments.hpp>
 
-namespace padauk {
+namespace kelon {
 
 /// Parameters controlling how computer keypresses are handled.
 struct KeyboardParameters {
@@ -18,15 +18,10 @@ struct KeyboardParameters {
 class App : public al::App, al::MIDIMessageHandler {
 private:
     /// Manages synth voices and their associated graphics.
-    al::SynthGUIManager<Marimba> synthManager{"padauk"};
+    al::SynthGUIManager<AdditiveMarimba> synthManager{"kelon-additive-marimba"};
 
     /// MIDI input.
     RtMidiIn midiIn;
-
-    // /// Compressor.
-    // padauk::CompressorPlugin<padauk::BLOCK_SIZE> compressor;
-    // /// Whether to compress audio.
-    // bool useCompressor = false;
 
     /// Keyboard parameters.
     KeyboardParameters keyboardParameters{};
@@ -46,6 +41,6 @@ private:
     void onExit() override;
 };
 
-}; // namespace padauk
+}; // namespace kelon
 
 #endif

@@ -1,7 +1,7 @@
 #include "app.hpp"
 
 int main() {
-    padauk::App app;
+    kelon::App app;
 
     app.dimensions(1200, 600);
 

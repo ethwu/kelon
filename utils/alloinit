@@ -34,9 +34,9 @@ fi
 # Name of the script.
 name="$(basename $0)"
 # Version.
-version='0.1.2'
-# Usage information.
+version='0.2.0'
 
+# Usage information.
 function show_usage() {
     local width="$(tput cols)"
     # Color shortcuts.
@@ -50,33 +50,39 @@ $g$0$n $version
 One-step Allolib project initializer.
 
 ${y}Usage$n:
-    $g$name -N <dir>$n           Start a traditional Allotemplate project
-                                in <dir> using Git submodules (i.e., without
-                                shared Allolib between projects).
-    $g$name -l <dir> -u$n        Update dependencies for traditional
-                                project in <dir>.
+    $g$name <proj>$n                   Start a project in <proj>.
+    $g$name -u <proj>$n                Update Allolib in <proj>.
 
-    $g$name [OPTIONS] <dir>$n    Start a new Allolib project in <dir>.
-    $g$name [OPTIONS] -r <dir>$n Relink Allolib dependencies in <dir>.
-    $g$name [OPTIONS] -u$n       Update Allolib dependencies.
-    $g$name [OPTIONS] -L$n       Just install Allolib dependencies.
+    $g$name -S [-l <libs>] <proj>$n    Start a project in <proj> using
+                                      shared Allolib in <libs>.
+    $g$name -S [-l <libs>] -r <proj>$n Relink shared Allolib to <proj>.
+    $g$name -S [-l <libs>] -u$n        Update shared Allolib in <libs>.
+    $g$name -S [-l <libs>] -L$n        Install shared Allolib in <libs>.
 
 ${y}Options$n:
-    $g-l <libs>$n   Specify the directory to install Allolib dependencies
-                to. [Default: $g$data_home$n]
-    $g-r$n          Relink dependencies. Useful if you have moved Allolib.
-    $g-u$n          Update dependencies.
-    $g-L$n          Install dependencies without initializing a project.
-    $g-N$n          Install without linking dependencies, adding them as Git
-                submodules instead. When Allolib dependencies are installed
-                this way, the $g-u$n flag can be used to update Allolib by
-                passing the root of the project to $g-l$n.
+    $g-l <libs>$n   Specify the directory where Allolib and its extensions
+                are installed. Defaults to <proj>. In shared mode, defaults to
+                $g\$XDG_DATA_HOME/alloinit/$n. The value of <libs> controls
+                the behavior of $name.
+                [Default: $g<proj>$n or $g$data_home$n]
+    $g-u$n          Update Allolib and its extensions.
     $g-h$n          Show this help text.
     $g-V$n          Show the version.
+${y}Shared Mode Options$n:
+    $g-S$n          Operate in shared dependency mode. Projects created in
+                shared dependency mode will use symbolic links to share a
+                user-wide installation of Allolib and its extensions, instead
+                of adding them as submodules to <proj>. In shared mode, <libs>
+                will default to $g\$XDG_DATA_HOME/alloinit/$n instead of the
+                current working directory.
+    $g-r$n          Relink dependencies. Re-creates symbolic links in <proj>
+                so that they point to the shared Allolib in <libs>.
+    $g-L$n          Install Allolib and its extensions in <libs> without
+                creating a project.
 
 ${y}Full Documentation$n:
-    $b${u}https://allolib-s22.github.io/notes-ethwu/alloinit.html$n
 EOF
+    echo "    $b${u}https://github.com/Allosphere-Research-Group/allotemplate/blob/master/utils/alloinit.md$n"
 }
 
 if [[ $# -lt 1 ]] ; then
@@ -89,10 +95,10 @@ args=()
 # Subcommand to execute.
 subcommand=init
 while [[ $OPTIND -le $# ]] ; do
-    if getopts 'l:ruLNhV' opt ; then
+    if getopts 'l:ruLShV' opt ; then
         case "$opt" in
         l)
-            lib="$OPTARG"
+            libs="$OPTARG"
             ;;
         r)
             subcommand=relink
@@ -103,8 +109,8 @@ while [[ $OPTIND -le $# ]] ; do
         L)
             subcommand=installdeps
             ;;
-        N)
-            nolink=1
+        S)
+            shared=1
             ;;
         h)
             show_usage
@@ -140,15 +146,23 @@ function error() { >&2 echo "$bold$red$*$normal" ; }
 
 # Directory to set up allolib project in.
 dest="${args[0]}"
-if [[ $subcommand =~ (init|relink) ]] && [[ -z "$dest" ]] ; then
-    error "ERROR: Project directory required."
+# Directory to keep shared dependencies.
+if [[ -n $shared ]] ; then
+    libs="${libs:-$data_home}"
+elif [[ -z "$libs" ]] ; then
+    # Not in shared mode, `libs` defaults to `dest`.
+    libs="$dest"
+fi
+
+if [[ $subcommand =~ (init|relink) ]] && [[ -z "$dest" ]] ||
+    [[ $subcommand = update ]] && [[ -z "$libs" ]] ; then
+    error 'ERROR: Not enough arguments.'
     >&2 show_usage
     exit 1
 fi
-# Directory to keep shared dependencies.
-lib="${lib:-$data_home}"
+
 # Whether the dependency directory already existed before running the script.
-lib_existed="$(test -d "$lib" ; echo $?)"
+libs_existed="$(test -d "$libs" ; echo $?)"
 # Dependencies shared between allolib projects.
 deps=(
     allolib
@@ -163,16 +177,16 @@ function cleanup() {
     if [[ $subcommand == init ]] ; then
         warn 'Could not finish; cleaning up.'
         for dep in "${deps[@]}" ; do
-            if [[ -f "$lib/.$dep$tmpfile" ]] ; then
-                info "Removing dependency \`$lib/$dep\`."
-                rm -rf "$lib/$dep" "$lib/.$dep$tmpfile"
+            if [[ -f "$libs/.$dep$tmpfile" ]] ; then
+                info "Removing dependency \`$libs/$dep\`."
+                rm -rf "$libs/$dep" "$libs/.$dep$tmpfile"
             fi
         done
 
         # Remove lib if it did not exist prior to running alloinit.
-        if [[ -d "$lib" ]] && ! [[ "$lib_existed" -eq 0 ]] &&
-            [[ -n "$(find "$lib" -maxdepth 0 -type d -empty 2> /dev/null)" ]] ; then
-            rmdir "$lib"
+        if [[ -d "$libs" ]] && ! [[ "$libs_existed" -eq 0 ]] &&
+            [[ -n "$(find "$libs" -maxdepth 0 -type d -empty 2> /dev/null)" ]] ; then
+            rmdir "$libs"
         fi
 
         if [[ -f "$dest/$tmpfile" ]] ; then
@@ -193,16 +207,16 @@ trap onexit EXIT
 
 # Install allolib dependencies to $lib.
 function install_dependencies() {
-    mkdir -p "$lib" || exit $?
+    mkdir -p "$libs" || exit $?
     for dep in "${deps[@]}" ; do
-        if [[ ! -d "$lib/$dep" ]] ; then
-            touch "$lib/.$dep$tmpfile" || exit $?
+        if [[ ! -d "$libs/$dep" ]] ; then
+            touch "$libs/.$dep$tmpfile" || exit $?
             info "Retrieving dependency \`$dep\`:"
-            git clone "git@github.com:Allosphere-Research-Group/$dep.git" "$lib/$dep" \
+            git clone "git@github.com:Allosphere-Research-Group/$dep.git" "$libs/$dep" \
                 --recurse-submodules \
                 --depth 1 \
                 --progress 2>&1 || exit $?
-            rm -f "$lib/.$dep$tmpfile" || exit $?
+            rm -f "$libs/.$dep$tmpfile" || exit $?
         fi
     done
 }
@@ -210,17 +224,16 @@ function install_dependencies() {
 # Link dependencies to a project. If the first argument is set, also amends the
 # `.gitignore` to ignore the dependency links.
 function link_dependencies() {
-    if [[ -n $nolink ]] ; then
-        warn "Not linking dependencies."
-    else
+    if [[ -n $shared ]] ; then
+        info 'Linking dependencies.'
         local write_gitignore=$1
         [[ -z $write_gitignore ]] || printf "\n\n# allolib dependencies\n" >> "$dest/.gitignore"
         for dep in "${deps[@]}" ; do
-            if ! [[ -d "$lib/$dep" ]] ; then
-                error "\`$lib/$deps\` is not a directory."
+            if ! [[ -d "$libs/$dep" ]] ; then
+                error "\`$libs/$deps\` is not a directory."
                 exit 1
             fi
-            loc="$(cd "$lib/$dep" && pwd)" || exit $?
+            loc="$(cd "$libs/$dep" && pwd)" || exit $?
             [[ -z $write_gitignore ]] || printf "/$dep\n" >> "$dest/.gitignore"
             info "Linking dependency \`$dep\` to \`$loc\`."
             ln -sf "$loc" "$dest" || exit $?
@@ -228,7 +241,7 @@ function link_dependencies() {
     fi
 }
 
-# Add dependencies as submodules to a project. Only used when the -N (nolink)
+# Add dependencies as submodules to a project. Not used when the -s (shared)
 # flag is passed.
 function add_dependencies_as_submodules() (
     cd "$1"
@@ -239,7 +252,6 @@ function add_dependencies_as_submodules() (
     done
     git submodule update --init --recursive --depth 1 2>&1 || exit $?
 )
-
 
 # Execute subcommand:
 case $subcommand in
@@ -252,14 +264,15 @@ relink)
     ;;
 update)
     # Update existing libraries.
+    info "Updating existing Allolib and extensions in \`$libs\`."
     for dep in "${deps[@]}" ; do
-        if ! [[ -d "$lib/$dep" ]] ; then
-            error "ERROR: \`$dep\` not installed in \`$lib\`."
+        if ! [[ -d "$libs/$dep" ]] ; then
+            error "ERROR: \`$dep\` not installed in \`$libs\`."
             exit 1
         fi
         info "Updating dependency \`$dep\`:"
         (
-            cd "$lib/$dep"
+            cd "$libs/$dep"
             # Sync upstream changes to the URL of submodules.
             git submodule sync --recursive || exit $?
             # Update submodules.
@@ -268,11 +281,17 @@ update)
             git pull --progress || exit $?
         ) 2>&1 || exit $?
     done
-    success "Successfully updated Allolib dependencies in \`$lib\`!"
+    success "Successfully updated Allolib dependencies in \`$libs\`!"
     ;;
 installdeps)
+    if ! [[ -n $shared ]] ; then
+        error 'ERROR: Not valid outside of shared mode.'
+        >&2 show_usage
+        exit 1
+    fi
+    info "Installing Allolib and extensions to \`$libs\`"
     install_dependencies || exit $?
-    success "Successfully installed Allolib dependencies to \`$lib\`!"
+    success "Successfully installed Allolib dependencies to \`$libs\`!"
     ;;
 init)
     if [[ -d "$dest" ]] ; then
@@ -280,7 +299,7 @@ init)
         exit 1
     fi
 
-    info "Initializing allolib project in \`$dest\`:"
+    info "Initializing $([[ -n $shared ]] && echo 'shared ')Allolib project in \`$dest\`:"
     mkdir -p "$dest" || exit $?
     # Mark that $dest is currently being initialized. Used for checking whether
     # to delete it in case of an early exit.
@@ -296,18 +315,18 @@ init)
     ) 2>&1 || exit $?
 
     # Install dependencies, link them, and write their names to the `.gitignore`.
-    if [[ -n $nolink ]] ; then
-        add_dependencies_as_submodules "$dest" || exit $?
-    else
+    if [[ -n $shared ]] ; then
         install_dependencies || exit $?
         link_dependencies write_gitignore || exit $?
+    else
+        add_dependencies_as_submodules "$dest" || exit $?
     fi
 
     info 'Configuring allolib project.'
     (cd "$dest" && ./configure.sh ) 2>&1 || exit $?
 
-    info 'Removing unusable scripts (init.sh; distclean.sh).'
-    rm "$dest/"{init,distclean}.sh || exit $?
+    info 'Removing `init.sh`. (No longer needed.)'
+    rm "$dest/"init.sh || exit $?
 
     success "Successfully initialized Allolib project \`$dest\`!"
     ;;

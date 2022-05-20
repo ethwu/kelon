@@ -5,6 +5,8 @@
 # while not ignoring things inside bin/data
 !**/bin/data
 
+!src/bin/*
+
 # anything named build
 build
 
