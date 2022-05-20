@@ -18,7 +18,7 @@ struct KeyboardParameters {
 class App : public al::App, al::MIDIMessageHandler {
 private:
     /// Manages synth voices and their associated graphics.
-    al::SynthGUIManager<AdditiveMarimba> synthManager{"kelon-additive-marimba"};
+    al::SynthGUIManager<AdditiveMarimba> synthManager{"kelon"};
 
     /// MIDI input.
     RtMidiIn midiIn;

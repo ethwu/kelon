@@ -19,6 +19,9 @@ const std::map<MarimbaParameter, std::string> PARAMETER_NAMES = {
 
     {MarimbaParameter::VisualWidth, "visual_w"},
     {MarimbaParameter::VisualHeight, "visual_h"},
+
+    {MarimbaParameter::FirstOvertone, "first_overtone"},
+    {MarimbaParameter::SecondOvertone, "second_overtone"},
 };
 
 const std::string &name(const MarimbaParameter &p) {

@@ -47,6 +47,13 @@ void AdditiveMarimbaBase::onProcess(al::AudioIOData &io) {
     /// Location as a percent distance from C6.
     const float location = 1.f - float(note - C6) / float(C8 - C6);
 
+    /// Which harmonics to sound.
+    const float harmonics[OSCILLATOR_COUNT] = {
+        1,
+        value(MarimbaParameter::FirstOvertone),
+        value(MarimbaParameter::SecondOvertone),
+    };
+
     /// Attack time.
     const float attackTime = value(MarimbaParameter::AttackTime);
     /// Decay time.
@@ -56,11 +63,11 @@ void AdditiveMarimbaBase::onProcess(al::AudioIOData &io) {
         marimbaDecay(note, value(MarimbaParameter::ReleaseTime)), 0.15f);
 
     for (std::size_t i = 0; i < OSCILLATOR_COUNT; i++) {
-        oscillators[i].freq(freq * parameters->harmonics[i]);
+        oscillators[i].freq(freq * harmonics[i]);
         gam::real *const lengths = envelopes[i].lengths();
-        lengths[0] = attackTime / parameters->harmonics[i];
-        lengths[1] = decayTime / parameters->harmonics[i];
-        lengths[2] = releaseTime / parameters->harmonics[i];
+        lengths[0] = attackTime / harmonics[i];
+        lengths[1] = decayTime / harmonics[i];
+        lengths[2] = releaseTime / harmonics[i];
     }
 
     /// Hardness scaled by 1 / scaleHardness.

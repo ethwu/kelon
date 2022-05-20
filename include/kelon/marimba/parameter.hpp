@@ -31,6 +31,11 @@ enum class MarimbaParameter {
     VisualWidth,
     /// The height of the visual.
     VisualHeight,
+
+    /// Which harmonic the first overtone is.
+    FirstOvertone,
+    /// Which harmonic the second overtone is.
+    SecondOvertone,
 };
 
 /// Get the name of this marimba parameter.

@@ -69,15 +69,18 @@ void AdditiveVisualizedMarimba::onProcess(al::Graphics &g) {
     /// Get the MIDI note from the voice ID.
     const unsigned char note = id();
 
+    /// The harmonics sounded by the marimba.
+    const float harmonics[OSCILLATOR_COUNT] = {
+        1,
+        value(MarimbaParameter::FirstOvertone),
+        value(MarimbaParameter::SecondOvertone),
+    };
+
     for (std::size_t i = 0; i < OSCILLATOR_COUNT; i++) {
-        drawNoteVisual(
-            g,
-            freqToMidiNote(midiNoteToFreq(note) *
-                           AdditiveMarimbaBase::parameters->harmonics[i]),
-            value(MarimbaParameter::Hardness),
-            followers[i].value(),
-            value(MarimbaParameter::VisualWidth),
-            value(MarimbaParameter::VisualHeight), i != 0);
+        drawNoteVisual(g, freqToMidiNote(midiNoteToFreq(note) * harmonics[i]),
+                       value(MarimbaParameter::Hardness), followers[i].value(),
+                       value(MarimbaParameter::VisualWidth),
+                       value(MarimbaParameter::VisualHeight), i != 0);
     }
 }
 

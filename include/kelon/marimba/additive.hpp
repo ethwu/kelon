@@ -29,15 +29,15 @@ float marimbaDecay(const unsigned char midiNote, const float baseDecay = 1.5f);
 /// Number of oscillators.
 const std::size_t OSCILLATOR_COUNT = 3;
 /// Internal parameter count.
-const std::size_t INTERNAL_PARAMETER_COUNT = 9;
+const std::size_t INTERNAL_PARAMETER_COUNT = 11;
 
 /**
  * Parameters required for adjusting the additive marimba. Should not change
  * during execution.
  */
 struct AdditiveMarimbaParameters {
-    /// Which harmonics to play.
-    const unsigned int harmonics[OSCILLATOR_COUNT];
+    /// Which harmonics to play. Not used.
+    const unsigned int _harmonics[OSCILLATOR_COUNT];
 
     /// Factor to scale hardness by.
     const float scaleHardness;
