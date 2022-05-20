@@ -18,7 +18,7 @@ const AdditiveMarimbaParameters additiveMarimbaParameters{
     2,
     {
         {MarimbaParameter::Hardness, 0.5, 0.0, 1.0},
-        {MarimbaParameter::Brightness, 0.583, 0.0, 1.0},
+        {MarimbaParameter::Brightness, 0.6, 0.0, 1.0},
 
         {MarimbaParameter::Amplitude, 0.8, 0.0, 1.0},
 

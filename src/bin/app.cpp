@@ -57,6 +57,7 @@ void App::onAnimate(const double _dt) {
 
     // Draw synth control panel.
     synthManager.drawFields();
+    synthManager.drawPresets();
     synthManager.drawSynthSequencer();
     synthManager.drawSynthRecorder();
 

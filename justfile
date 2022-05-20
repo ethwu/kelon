@@ -1,0 +1,4 @@
+
+make *args:
+    make {{args}}
+

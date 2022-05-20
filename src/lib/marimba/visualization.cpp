@@ -3,6 +3,7 @@
 
 #include <al/graphics/al_Shapes.hpp>
 
+#include <iostream>
 #include <kelon/marimba/parameter.hpp>
 #include <kelon/util.hpp>
 
@@ -35,8 +36,8 @@ void MarimbaVisualizer::drawNoteVisual(
 
     const float x = w * (offsetNote - 0.5);
 
-    const float hue = offsetNote / range;
-    const float sat = reduceRange(hardness);
+    const float hue = u_char(offsetNote) % 12 / 12.f;
+    const float sat = 1 - reduceRange(offsetNote) / range;
     const float val = 1.f;
 
     g.pushMatrix();
