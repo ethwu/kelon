@@ -5,10 +5,11 @@
 # while not ignoring things inside bin/data
 !**/bin/data
 
-!src/bin/*
-
 # anything named build
 build
+
+*.tmp
+imgui.ini
 
 *.log
 *.png
@@ -26,6 +27,8 @@ build
 *.bin
 *.binary
 
+# tracks when CMake needs to be reconfigured
+.sources
+
 apps/
-*-data/
-imgui.ini
+

@@ -1,13 +1,13 @@
-::xylophone
-/amplitude f 0.800000
-/attack_time f 0.010000
-/brightness f 0.250000
-/decay_time f 0.150000
-/hardness f 0.750000
-/pan f 0.000000
-/release_time f 1.500000
-/visual_h f 600.000000
-/visual_w f 1200.000000
-/first_overtone f 3.000000
-/second_overtone f 6.000000
+::1
+/amplitude f 0.800000 
+/attack_time f 0.010000 
+/brightness f 0.250000 
+/decay_time f 0.150000 
+/first_overtone f 3.000000 
+/hardness f 0.750000 
+/pan f 0.000000 
+/release_time f 1.500000 
+/second_overtone f 6.000000 
+/visual_h f 900.000000 
+/visual_w f 1200.000000 
 ::

@@ -32,7 +32,7 @@ const AdditiveMarimbaParameters additiveMarimbaParameters{
         {MarimbaParameter::Pan, 0.0, -1.0, 1.0},
 
         {MarimbaParameter::VisualWidth, 1200, 0, 4096},
-        {MarimbaParameter::VisualHeight, 600, 0, 4096},
+        {MarimbaParameter::VisualHeight, 900, 0, 4096},
 
         {MarimbaParameter::FirstOvertone, 4, 0, 12},
         {MarimbaParameter::SecondOvertone, 10, 0, 12},
@@ -60,6 +60,9 @@ const AdditiveMarimbaParameters additiveXylophoneParameters{
          MAXIMUM_ADSR_TIME},
 
         {MarimbaParameter::Pan, 0.0, -1.0, 1.0},
+
+        {MarimbaParameter::VisualWidth, 1200, 0, 4096},
+        {MarimbaParameter::VisualHeight, 900, 0, 4096},
 
         {MarimbaParameter::FirstOvertone, 3, 0, 12},
         {MarimbaParameter::SecondOvertone, 6, 0, 12},

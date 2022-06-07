@@ -3,14 +3,14 @@ cmake_minimum_required(VERSION 3.0)
 # Get the library name.
 file(STRINGS "src/lib/name.txt" LIB_NAME)
 # Get the binary name.
-file(STRINGS "src/bin/name.txt" BIN_NAME)
+file(STRINGS "src/app/name.txt" BIN_NAME)
 # Set the project name.
 project(${LIB_NAME})
 
 # Get the sources for the underlying library from `src/lib/`.
 file(GLOB_RECURSE library "src/lib/*.cpp")
 # Get the sources for the executable from `src/bin/`.
-file(GLOB_RECURSE binary "src/bin/*.cpp")
+file(GLOB_RECURSE binary "src/app/*.cpp")
 set(headers "include")
 
 # The project will be backed by this library.

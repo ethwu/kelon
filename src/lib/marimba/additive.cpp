@@ -97,8 +97,8 @@ void AdditiveMarimbaBase::onProcess(al::AudioIOData &io) {
 
         // Sum the samples and scale them down by `scaleAmplitude`. Split the
         // generated mono sample into left and right.
-        pan(std::accumulate(samples.begin(), samples.end(), 0.f) /
-                parameters->scaleAmplitude,
+        pan(std::accumulate(samples.begin(), samples.end(), 0.f) *
+                value(MarimbaParameter::Amplitude) / parameters->scaleAmplitude,
             sampleLeft, sampleRight);
 
         // Send the output samples to their respective channels.
