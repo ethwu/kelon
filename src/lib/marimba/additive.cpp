@@ -8,10 +8,6 @@
 
 namespace kelon {
 
-float marimbaDecay(const unsigned char midiNote, const float baseDecay) {
-    return baseDecay - 11.f * (midiNote - 52.f) / 360.f;
-}
-
 AdditiveMarimbaBase::AdditiveMarimbaBase(
     const AdditiveMarimbaParameters *const params)
     : al::SynthVoice(), parameters(params) {}
@@ -20,8 +16,11 @@ AdditiveMarimbaBase::~AdditiveMarimbaBase() {}
 
 void AdditiveMarimbaBase::init() {
     for (auto &env : envelopes) {
-        env.curve(0);
-        env.levels(0, 1, 0.2, 0);
+        env.curve(AdditiveMarimbaParameters::ENVELOPE_CURVE);
+        env.levels(AdditiveMarimbaParameters::ENVELOPE_LEVELS[0],
+                   AdditiveMarimbaParameters::ENVELOPE_LEVELS[1],
+                   AdditiveMarimbaParameters::ENVELOPE_LEVELS[2],
+                   AdditiveMarimbaParameters::ENVELOPE_LEVELS[3]);
     }
 
     // Set up the main parameters of the voice.
@@ -34,7 +33,7 @@ void AdditiveMarimbaBase::init() {
 void AdditiveMarimbaBase::onProcess(al::AudioIOData &io) {
     // Set values according to internal trigger parameter values.
 
-    /// The MIDI note we are playing.
+    /// Get the MIDI note we are playing from our voice ID.
     const unsigned char note = id();
     const float hardness = value(MarimbaParameter::Hardness);
 
@@ -48,11 +47,13 @@ void AdditiveMarimbaBase::onProcess(al::AudioIOData &io) {
     const float location = 1.f - float(note - C6) / float(C8 - C6);
 
     /// Which harmonics to sound.
-    const float harmonics[OSCILLATOR_COUNT] = {
+    const float harmonics[AdditiveMarimbaParameters::OSCILLATOR_COUNT] = {
         1,
         value(MarimbaParameter::FirstOvertone),
         value(MarimbaParameter::SecondOvertone),
     };
+    // const float harmonics[AdditiveMarimbaParameters::OSCILLATOR_COUNT] =
+    //     parameters->_harmonics;
 
     /// Attack time.
     const float attackTime = value(MarimbaParameter::AttackTime);
@@ -62,7 +63,8 @@ void AdditiveMarimbaBase::onProcess(al::AudioIOData &io) {
     const float releaseTime = std::fmax(
         marimbaDecay(note, value(MarimbaParameter::ReleaseTime)), 0.15f);
 
-    for (std::size_t i = 0; i < OSCILLATOR_COUNT; i++) {
+    for (std::size_t i = 0; i < AdditiveMarimbaParameters::OSCILLATOR_COUNT;
+         i++) {
         oscillators[i].freq(freq * harmonics[i]);
         gam::real *const lengths = envelopes[i].lengths();
         lengths[0] = attackTime / harmonics[i];
@@ -79,16 +81,18 @@ void AdditiveMarimbaBase::onProcess(al::AudioIOData &io) {
     while (io()) {
         // Generate a sample in mono.
 
-        const std::array<float, OSCILLATOR_COUNT> samples = {
-            float(oscillators[0]() * envelopes[0]()),
-            float(oscillators[1]() * envelopes[1]() * scaledHardness *
-                  (1 - brightness)),
-            float(oscillators[2]() * envelopes[2]() * scaledHardness *
-                  brightness * std::fmin(location, 1)),
-        };
+        const std::array<float, AdditiveMarimbaParameters::OSCILLATOR_COUNT>
+            samples = {
+                float(oscillators[0]() * envelopes[0]()),
+                float(oscillators[1]() * envelopes[1]() * scaledHardness *
+                      (1 - brightness)),
+                float(oscillators[2]() * envelopes[2]() * scaledHardness *
+                      brightness * std::fmin(location, 1)),
+            };
 
         // Set the followers after the generated sample components.
-        for (std::size_t i = 0; i < OSCILLATOR_COUNT; i++) {
+        for (std::size_t i = 0; i < AdditiveMarimbaParameters::OSCILLATOR_COUNT;
+             i++) {
             followers[i](samples[i]);
         }
 
@@ -115,7 +119,8 @@ void AdditiveMarimbaBase::onProcess(al::AudioIOData &io) {
 }
 
 void AdditiveMarimbaBase::onTriggerOn() {
-    for (std::size_t i = 0; i < OSCILLATOR_COUNT; i++) {
+    for (std::size_t i = 0; i < AdditiveMarimbaParameters::OSCILLATOR_COUNT;
+         i++) {
         envelopes[i].reset();
     }
 }

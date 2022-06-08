@@ -17,6 +17,10 @@ const std::map<MarimbaParameter, std::string> PARAMETER_NAMES = {
     {MarimbaParameter::DecayTime, "decay_time"},
     {MarimbaParameter::ReleaseTime, "release_time"},
 
+    {MarimbaParameter::Delay, "delay"},
+    {MarimbaParameter::Feedforward, "feedforward"},
+    {MarimbaParameter::Feedback, "feedback"},
+
     {MarimbaParameter::VisualWidth, "visual_w"},
     {MarimbaParameter::VisualHeight, "visual_h"},
 

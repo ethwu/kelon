@@ -21,7 +21,7 @@ void App::onInit() {
 
     auto *const voice = synthManager.voice();
 
-    voice->value(MarimbaParameter::VisualWidth, width());
+    value(MarimbaParameter::VisualWidth, *voice, width());
 
     if (midiIn.getPortCount() > 0) {
         // Bind MIDI handler if there is a MIDI device connected.
@@ -39,8 +39,8 @@ void App::onInit() {
 
 void App::onResize(const int w, const int h) {
     auto *const voice = synthManager.voice();
-    voice->value(MarimbaParameter::VisualWidth, w);
-    voice->value(MarimbaParameter::VisualHeight, h);
+    value(MarimbaParameter::VisualWidth, *voice, w);
+    value(MarimbaParameter::VisualHeight, *voice, h);
 }
 
 void App::onSound(al::AudioIOData &io) { synthManager.render(io); }
@@ -108,7 +108,7 @@ void App::onMIDIMessage(const al::MIDIMessage &m) {
     case al::MIDIByte::NOTE_ON: {
         const double velocity = m.velocity();
         if (midiNote > 0 && velocity > 0.001) {
-            voice->value(MarimbaParameter::Amplitude, velocity);
+            value(MarimbaParameter::Amplitude, *voice, velocity);
             triggerNote(midiNote);
         }
         break;
@@ -120,10 +120,10 @@ void App::onMIDIMessage(const al::MIDIMessage &m) {
         const double controlValue = m.controlValue();
         switch (m.controlNumber()) {
         case 7:
-            voice->value(MarimbaParameter::Hardness, controlValue);
+            value(MarimbaParameter::Hardness, *voice, controlValue);
             break;
         case 11:
-            voice->value(MarimbaParameter::Brightness, controlValue);
+            value(MarimbaParameter::Brightness, *voice, controlValue);
             break;
         case 14:
             break;

@@ -15,10 +15,14 @@ enum class MarimbaParameter {
     /// Adjusts the volume of the overtones relative to one another.
     Brightness,
 
+    ////// General Parameters //////
+
     /// Amplitude.
     Amplitude,
     /// Pan amount.
     Pan,
+
+    ////// Envelope Parameters //////
 
     /// Attack time.
     AttackTime,
@@ -27,10 +31,23 @@ enum class MarimbaParameter {
     /// Release time.
     ReleaseTime,
 
+    ////// Subtractive Synthesis Parameters //////
+
+    /// Delay amount.
+    Delay,
+    /// Feedforward amount in [-1, 1].
+    Feedforward,
+    /// Feedback amount in (-1, 1).
+    Feedback,
+
+    ////// Graphics Parameters //////
+
     /// The width of the visual.
     VisualWidth,
     /// The height of the visual.
     VisualHeight,
+
+    ////// Specialized Parameters //////
 
     /// Which harmonic the first overtone is.
     FirstOvertone,

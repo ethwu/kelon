@@ -12,7 +12,7 @@ public:
     AdditiveMarimba();
 
     static const std::tuple<MarimbaParameter, float, float, float>
-        INTERNAL_TRIGGER_PARAMETERS[INTERNAL_PARAMETER_COUNT];
+        INTERNAL_TRIGGER_PARAMETERS[AdditiveMarimbaParameters::INTERNAL_PARAMETER_COUNT];
 
 protected:
     /// The range to visualize.
@@ -24,7 +24,19 @@ public:
     AdditiveXylophone();
 
     static const std::tuple<MarimbaParameter, float, float, float>
-        INTERNAL_TRIGGER_PARAMETERS[INTERNAL_PARAMETER_COUNT];
+        INTERNAL_TRIGGER_PARAMETERS[AdditiveMarimbaParameters::INTERNAL_PARAMETER_COUNT];
+
+protected:
+    /// The range to visualize.
+    static const std::pair<const unsigned char, const unsigned char> RANGE;
+};
+
+class SubtractiveMarimba : public SubtractiveVisualizedMarimba {
+public:
+    SubtractiveMarimba();
+
+    static const std::tuple<MarimbaParameter, float, float, float>
+        INTERNAL_TRIGGER_PARAMETERS[SubtractiveMarimbaParameters::INTERNAL_PARAMETER_COUNT];
 
 protected:
     /// The range to visualize.

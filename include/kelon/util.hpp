@@ -19,6 +19,9 @@ unsigned char freqToMidiNote(const float freq);
 /// Reduce the range of a float from [0.0, 1.0] to [0.2, 1.0].
 float reduceRange(const float f);
 
+/// Simulate the decay of a marimba.
+float marimbaDecay(const unsigned char midiNote, const float baseDecay);
+
 }; // namespace kelon
 
 #endif

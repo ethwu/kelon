@@ -7,6 +7,7 @@
 #include <al/graphics/al_Shapes.hpp>
 
 #include <kelon/marimba/additive.hpp>
+#include <kelon/marimba/subtractive.hpp>
 
 namespace kelon {
 
@@ -31,7 +32,7 @@ private:
 
 public:
     /// The range to visualize. Not owned by the instrument.
-    const MarimbaRange * const playingRange;
+    const MarimbaRange *const playingRange;
     /// Initialize this visualizer for a new voice.
     void init();
 };
@@ -42,6 +43,18 @@ class AdditiveVisualizedMarimba : public AdditiveMarimbaBase,
 public:
     AdditiveVisualizedMarimba(const AdditiveMarimbaParameters *const params,
                               const MarimbaRange *const range);
+
+    void init() override;
+    void onProcess(al::Graphics &g) override;
+};
+
+/// ABC for visualizing subtractive marimbas.
+class SubtractiveVisualizedMarimba : public SubtractiveMarimbaBase,
+                                     protected MarimbaVisualizer {
+public:
+    SubtractiveVisualizedMarimba(
+        const SubtractiveMarimbaParameters *const params,
+        const MarimbaRange *const range);
 
     void init() override;
     void onProcess(al::Graphics &g) override;

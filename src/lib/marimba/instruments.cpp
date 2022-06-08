@@ -71,6 +71,30 @@ const AdditiveMarimbaParameters additiveXylophoneParameters{
 /// The visualized playing range of the xylophone.
 const MarimbaRange additiveXylophoneRange = {C2, C8};
 
+/// Constants for the xylophone.
+const SubtractiveMarimbaParameters subtractiveMarimbaParameters{{
+    {MarimbaParameter::Hardness, 0.75, 0.0, 1.0},
+    {MarimbaParameter::Brightness, 0.25, 0.0, 1.0},
+
+    {MarimbaParameter::Amplitude, 0.8, 0.0, 1.0},
+
+    {MarimbaParameter::AttackTime, 0.01, MINIMUM_ADSR_TIME, MAXIMUM_ADSR_TIME},
+    {MarimbaParameter::DecayTime, 0.15, MINIMUM_ADSR_TIME, MAXIMUM_ADSR_TIME},
+    {MarimbaParameter::ReleaseTime, 1.5, MINIMUM_ADSR_TIME, MAXIMUM_ADSR_TIME},
+
+    {MarimbaParameter::Delay, 0.5, MINIMUM_ADSR_TIME, MAXIMUM_ADSR_TIME},
+    {MarimbaParameter::Feedforward, 0.0, -1.0, 1.0},
+    {MarimbaParameter::Feedback, 0.0, -1.0, 1.0},
+
+    {MarimbaParameter::Pan, 0.0, -1.0, 1.0},
+
+    {MarimbaParameter::VisualWidth, 1200, 0, 4096},
+    {MarimbaParameter::VisualHeight, 900, 0, 4096},
+}};
+
+/// The visualized playing range of the xylophone.
+const MarimbaRange subtractiveMarimbaRange = {C2, C8};
+
 AdditiveMarimba::AdditiveMarimba()
     : AdditiveVisualizedMarimba(&additiveMarimbaParameters,
                                 &additiveMarimbaRange){};
@@ -78,5 +102,9 @@ AdditiveMarimba::AdditiveMarimba()
 AdditiveXylophone::AdditiveXylophone()
     : AdditiveVisualizedMarimba(&additiveXylophoneParameters,
                                 &additiveXylophoneRange){};
+
+SubtractiveMarimba::SubtractiveMarimba()
+    : SubtractiveVisualizedMarimba(&subtractiveMarimbaParameters,
+                                   &subtractiveMarimbaRange){};
 
 }; // namespace kelon

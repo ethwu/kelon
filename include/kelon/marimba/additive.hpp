@@ -26,16 +26,21 @@ namespace kelon {
  */
 float marimbaDecay(const unsigned char midiNote, const float baseDecay = 1.5f);
 
-/// Number of oscillators.
-const std::size_t OSCILLATOR_COUNT = 3;
-/// Internal parameter count.
-const std::size_t INTERNAL_PARAMETER_COUNT = 11;
 
 /**
  * Parameters required for adjusting the additive marimba. Should not change
  * during execution.
  */
 struct AdditiveMarimbaParameters {
+    /// Number of oscillators.
+    static const std::size_t OSCILLATOR_COUNT = 3;
+    /// Internal parameter count.
+    static const std::size_t INTERNAL_PARAMETER_COUNT = 11;
+    /// Envelope curve.
+    static constexpr float ENVELOPE_CURVE = 0.f;
+    /// Envelope levels.
+    static constexpr float ENVELOPE_LEVELS[4] = {0.f, 1.f, 0.2f, 0.f};
+
     /// Which harmonics to play. Not used.
     const unsigned int _harmonics[OSCILLATOR_COUNT];
 
@@ -74,11 +79,11 @@ protected:
     ~AdditiveMarimbaBase();
 
     /// Oscillators. Each oscillator is paired with its harmonic number.
-    gam::Sine<> oscillators[OSCILLATOR_COUNT];
+    gam::Sine<> oscillators[AdditiveMarimbaParameters::OSCILLATOR_COUNT];
     /// Envelopes. Each oscillator is paired with its harmonic number.
-    gam::Env<3> envelopes[OSCILLATOR_COUNT];
+    gam::Env<3> envelopes[AdditiveMarimbaParameters::OSCILLATOR_COUNT];
     /// Envelope followers for graphics.
-    gam::EnvFollow<> followers[OSCILLATOR_COUNT];
+    gam::EnvFollow<> followers[AdditiveMarimbaParameters::OSCILLATOR_COUNT];
 
     /// 2-channel panner.
     gam::Pan<> pan;

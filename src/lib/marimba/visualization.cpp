@@ -32,7 +32,7 @@ void MarimbaVisualizer::drawNoteVisual(
     /// Width of the visual.
     const float w = windowWidth / range;
     /// Height of the visual.
-    const float h = amplitude * 3.f * divisionHeight * (VISUAL_DIVISIONS - 1);
+    const float h = amplitude * 1.8f * divisionHeight * (VISUAL_DIVISIONS - 1);
 
     const float x = w * (offsetNote - 0.5);
 
@@ -70,18 +70,38 @@ void AdditiveVisualizedMarimba::onProcess(al::Graphics &g) {
     const unsigned char note = id();
 
     /// The harmonics sounded by the marimba.
-    const float harmonics[OSCILLATOR_COUNT] = {
+    const float harmonics[AdditiveMarimbaParameters::OSCILLATOR_COUNT] = {
         1,
         value(MarimbaParameter::FirstOvertone),
         value(MarimbaParameter::SecondOvertone),
     };
 
-    for (std::size_t i = 0; i < OSCILLATOR_COUNT; i++) {
+    for (std::size_t i = 0; i < AdditiveMarimbaParameters::OSCILLATOR_COUNT;
+         i++) {
         drawNoteVisual(g, freqToMidiNote(midiNoteToFreq(note) * harmonics[i]),
                        value(MarimbaParameter::Hardness), followers[i].value(),
                        value(MarimbaParameter::VisualWidth),
                        value(MarimbaParameter::VisualHeight), i != 0);
     }
+}
+
+SubtractiveVisualizedMarimba::SubtractiveVisualizedMarimba(
+    const SubtractiveMarimbaParameters *const params,
+    const MarimbaRange *const range)
+    : SubtractiveMarimbaBase(params), MarimbaVisualizer(range) {}
+
+void SubtractiveVisualizedMarimba::init() {
+    SubtractiveMarimbaBase::init();
+    MarimbaVisualizer::init();
+}
+
+void SubtractiveVisualizedMarimba::onProcess(al::Graphics &g) {
+    /// Get the MIDI note from the voice ID.
+    const unsigned char note = id();
+
+    drawNoteVisual(g, note, 1, follower.value(),
+                   value(MarimbaParameter::VisualWidth, *this),
+                   value(MarimbaParameter::VisualHeight, *this), false);
 }
 
 }; // namespace kelon
